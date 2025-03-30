@@ -86,5 +86,29 @@ def weather():
 
     return send_file(img_io, mimetype='image/bmp')
 
+@app.route('/reminders', methods=['POST'])
+def create_reminder():
+    data = request.get_json()
+    required = ['id', 'message', 'time', 'list']
+
+    if not all(key in data for key in required):
+        return jsonify({'error': 'Invalid data'}), 400
+
+    reminder = Reminder(id=data['id'], message=data['message'], time=data['time'], list=data['list'])
+    repo.save_reminder(reminder)
+    return jsonify({'message': 'Reminder created successfully'}), 201
+
+@app.route('/reminders/<reminder_id>', methods=['GET'])
+def get_reminder(reminder_id):
+    reminder = repo.get_reminder(reminder_id)
+    if reminder is None:
+        return jsonify({'error': 'Reminder not found'}), 404
+
+    return jsonify({
+        'id': reminder.id,
+        'message': reminder.message,
+        'time': reminder.time
+    }), 200
+
 if __name__ == '__main__':
     app.run(debug=True)

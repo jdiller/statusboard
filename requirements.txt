@@ -6,3 +6,4 @@ Werkzeug>=2.2,<3.0
 pillow
 titlecase
 gunicorn
+redis
