@@ -62,6 +62,10 @@ def image_bytes():
 
 @app.route('/')
 def index():
+    return jsonify({'status': 'healthy'})
+
+@app.route('/car_battery')
+def car_battery():
     img = get_charging_meter_image()
     # Convert image to byte stream
     img_io = BytesIO()
