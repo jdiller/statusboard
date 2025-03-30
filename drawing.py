@@ -1,5 +1,5 @@
-from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont
+from titlecase import titlecase
 
 def create_charging_meter_image(current_percentage, target_percentage, width=200, height=80):
     # Create a new image with white background
@@ -84,15 +84,33 @@ def image_to_packed_bytes(image):
 
     return packed_bytes
 
-def create_weather_image(temperature, humidity, conditions, wind_speed, width=400, height=200):
+def get_weather_icon(condition_id):
+    match(condition_id):
+        case x if x in range(200, 233): #thunderstorm
+            return '\uebdb'
+        case x if x in range(300, 322): #drizzle
+            return '\ue61e'
+        case x if x in range(500, 531): #rain
+            return '\uf176'
+        case x if x in range(600, 622): #snow
+            return '\ue2cd'
+        case x if x in range(700, 781): #mist
+            return '\ue188'
+        case 800: #clear
+            return '\ue81a'
+        case 801 | 802: #partly cloudy
+            return '\uf172'
+        case 803 | 804: #cloudy
+            return '\ue2bd'
+
+def create_weather_image(temperature, humidity, conditions_id, conditions_text, wind_speed, width=300, height=200):
     padding = 17
-    # Create a new image with white background
     image = Image.new('1', (width, height), 1)
     draw = ImageDraw.Draw(image)
 
     # Draw the temperature
     temp_font = ImageFont.truetype("Arial", 60)
-    temp_text = f'{temperature}°C'
+    temp_text = f'{int(temperature)}°C'
     temp_bbox = draw.textbbox((0, 0), temp_text, font=temp_font)
     temp_width = temp_bbox[2] - temp_bbox[0]
     temp_x = width - temp_width - 10
@@ -108,9 +126,19 @@ def create_weather_image(temperature, humidity, conditions, wind_speed, width=40
     hum_x = width - hum_width - 10
     draw.text((hum_x, temp_bbox[3] + padding), hum_text, font=hum_font, fill=0)
 
+    # Draw the weather icon
+    icon = get_weather_icon(conditions_id)
+    icon_font = ImageFont.truetype("MaterialIconsOutlined-Regular", 64)
+    icon_bbox = draw.textbbox((0, 0), icon, font=icon_font)
+    print(f'Icon BBOX: {icon_bbox}')
+    print(f'Icon: {icon}')
+    #icon_width = icon_bbox[2] - icon_bbox[0]
+    #icon_x = width - icon_width - 10
+    draw.text((10,10), icon, font=icon_font, fill=0)
+
     # Draw the conditions
     cond_font = ImageFont.truetype("Arial", 16)
-    cond_text = f'Conditions: {conditions}'
+    cond_text = f'{titlecase(conditions_text)}'
     cond_bbox = draw.textbbox((0, 0), cond_text, font=cond_font)
     cond_width = cond_bbox[2] - cond_bbox[0]
     cond_x = width - cond_width - 10

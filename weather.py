@@ -22,7 +22,7 @@ class Weather:
 
     def get_conditions(self):
         weather = self.get_weather()
-        return weather['weather'][0]['description']
+        return weather['weather'][0]['id'], weather['weather'][0]['description']
 
     def get_wind_speed(self):
         weather = self.get_weather()

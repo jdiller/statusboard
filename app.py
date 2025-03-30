@@ -33,9 +33,9 @@ def get_weather_image():
     weather = Weather(config)
     temperature = weather.get_temperature()
     humidity = weather.get_humidity()
-    conditions = weather.get_conditions()
+    conditions_id, conditions_text = weather.get_conditions()
     wind_speed = weather.get_wind_speed()
-    img = drawing.create_weather_image(temperature, humidity, conditions, wind_speed)
+    img = drawing.create_weather_image(temperature, humidity, conditions_id, conditions_text, wind_speed)
     return img
 
 app = Flask(__name__)
