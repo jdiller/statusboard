@@ -128,13 +128,9 @@ def create_weather_image(temperature, humidity, conditions_id, conditions_text, 
 
     # Draw the weather icon
     icon = get_weather_icon(conditions_id)
-    icon_font = ImageFont.truetype("MaterialIconsOutlined-Regular", 64)
-    icon_bbox = draw.textbbox((0, 0), icon, font=icon_font)
-    print(f'Icon BBOX: {icon_bbox}')
-    print(f'Icon: {icon}')
-    #icon_width = icon_bbox[2] - icon_bbox[0]
-    #icon_x = width - icon_width - 10
-    draw.text((10,10), icon, font=icon_font, fill=0)
+    with open("assets/MaterialIconsOutlined-Regular.otf", "rb") as f:
+        icon_font = ImageFont.truetype(f, 64)
+        draw.text((10,10), icon, font=icon_font, fill=0)
 
     # Draw the conditions
     cond_font = ImageFont.truetype("Arial", 16)
