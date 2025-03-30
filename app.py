@@ -115,7 +115,7 @@ def get_reminder(reminder_id):
 def get_all_reminders():
     reminders = repo.get_all_reminders()
     reminders_list = [
-        {'id': reminder.id, 'message': reminder.message, 'time': reminder.time}
+            asdict(reminder)
         for reminder in reminders
     ]
     return jsonify(reminders_list), 200
