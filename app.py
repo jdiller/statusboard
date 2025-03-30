@@ -1,15 +1,25 @@
+import drawing
 from homeassistant import HomeAssistant
 from weather import Weather
-from flask import Flask, send_file, make_response
+from flask import Flask, send_file, make_response, request, jsonify
 from localconfig import get_config
 from logconfig import configure_logging
 from io import BytesIO
-import drawing
+from repository import Repository
+from reminder import Reminder
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
 config = get_config()
 logger = configure_logging(config)
 
+
 app = Flask(__name__)
+
+wsgi_app = DispatcherMiddleware(None, {
+    config['server']['webroot']: app
+})
+
+repo = Repository(host='redis', port=6379)
 
 def get_charging_meter_image():
     # Get car status
