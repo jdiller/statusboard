@@ -26,7 +26,7 @@ def create_charging_meter_image(current_percentage, target_percentage, width=200
     draw.rounded_rectangle([meter_left + padding, bar_top, current_x, bar_top + bar_height], 5, fill=0)
 
     # Add target percentage text above the meter
-    font = ImageFont.truetype("Arial", 11)
+    font = ImageFont.truetype("LiberationSans-Regular", 11)
     target_text = f'Target = {target_percentage}%'
     text_bbox = draw.textbbox((0, 0), target_text, font=font)
     text_width = text_bbox[2] - text_bbox[0]
@@ -37,7 +37,7 @@ def create_charging_meter_image(current_percentage, target_percentage, width=200
     draw.line([(target_x, text_bbox[3] + padding), (target_x, bar_top + bar_height)], fill=0)
 
     # Add current percentage text inside the bar
-    charge_font = ImageFont.truetype("Arial Rounded Bold", 20)
+    charge_font = ImageFont.truetype("LiberationMono-Regular", 20)
     charge_text = f'{current_percentage}%'
     charge_text_bbox = draw.textbbox((0, 0), charge_text, font=charge_font)
     charge_text_width = charge_text_bbox[2] - charge_text_bbox[0]
@@ -109,7 +109,7 @@ def create_weather_image(temperature, humidity, conditions_id, conditions_text, 
     draw = ImageDraw.Draw(image)
 
     # Draw the temperature
-    temp_font = ImageFont.truetype("Arial", 60)
+    temp_font = ImageFont.truetype("LiberationSans-Bold", 60)
     temp_text = f'{int(temperature)}°C'
     temp_bbox = draw.textbbox((0, 0), temp_text, font=temp_font)
     temp_width = temp_bbox[2] - temp_bbox[0]
@@ -119,7 +119,7 @@ def create_weather_image(temperature, humidity, conditions_id, conditions_text, 
     draw.line([(0, temp_bbox[3] + padding), (width, temp_bbox[3] + padding)], fill=0)
 
     # Draw the humidity
-    hum_font = ImageFont.truetype("Arial", 20)
+    hum_font = ImageFont.truetype("LiberationSans-Regular", 20)
     hum_text = f'Humidity: {humidity}%'
     hum_bbox = draw.textbbox((0, 0), hum_text, font=hum_font)
     hum_width = hum_bbox[2] - hum_bbox[0]
@@ -133,14 +133,14 @@ def create_weather_image(temperature, humidity, conditions_id, conditions_text, 
         draw.text((10,10), icon, font=icon_font, fill=0)
 
     # Draw the conditions
-    cond_font = ImageFont.truetype("Arial", 16)
+    cond_font = ImageFont.truetype("LiberationSans-Regular", 16)
     cond_text = f'{titlecase(conditions_text)}'
     cond_bbox = draw.textbbox((0, 0), cond_text, font=cond_font)
     cond_width = cond_bbox[2] - cond_bbox[0]
     cond_x = width - cond_width - 10
     draw.text((cond_x, temp_bbox[3] + hum_bbox[3] + padding * 2), cond_text, font=cond_font, fill=0)
 
-    wind_font = ImageFont.truetype("Arial", 16)
+    wind_font = ImageFont.truetype("LiberationSans-Regular", 16)
     wind_text = f'Wind: {wind_speed} km/h'
     wind_bbox = draw.textbbox((0, 0), wind_text, font=wind_font)
     wind_width = wind_bbox[2] - wind_bbox[0]

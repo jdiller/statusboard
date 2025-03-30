@@ -1,0 +1,16 @@
+services:
+  web:
+    build: .
+    ports:
+      - "5001:5000"
+    depends_on:
+      - redis
+    environment:
+      FLASK_ENV: development
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
+  redis:
+    image: "redis:alpine"
+    ports:
+      - "6379:6379"
