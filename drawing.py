@@ -1,9 +1,7 @@
 from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont
 
-
 def create_charging_meter_image(current_percentage, target_percentage, width=200, height=80):
-    current_percentage = 30
     # Create a new image with white background
     image = Image.new('1', (width, height), 1)
     draw = ImageDraw.Draw(image)
@@ -47,9 +45,9 @@ def create_charging_meter_image(current_percentage, target_percentage, width=200
     charge_text_x = current_x - (charge_text_width // 2) + padding
     charge_text_y = bar_top + (charge_text_height // 2)
     if current_percentage > 30:
-        draw.text((charge_text_x // 2, charge_text_y + padding), charge_text, font=charge_font, fill=255)
+        draw.text((charge_text_x // 2, charge_text_y + padding * 2), charge_text, font=charge_font, fill=255)
     else:
-        draw.text((meter_width // 2- (charge_text_width // 2) + padding, charge_text_y + padding), charge_text, font=charge_font, fill=0)
+        draw.text((meter_width // 2- (charge_text_width // 2) + padding * 2, charge_text_y + padding), charge_text, font=charge_font, fill=0)
 
     return image
 
@@ -85,3 +83,44 @@ def image_to_packed_bytes(image):
             packed_bytes.append(byte)
 
     return packed_bytes
+
+def create_weather_image(temperature, humidity, conditions, wind_speed, width=400, height=200):
+    padding = 17
+    # Create a new image with white background
+    image = Image.new('1', (width, height), 1)
+    draw = ImageDraw.Draw(image)
+
+    # Draw the temperature
+    temp_font = ImageFont.truetype("Arial", 60)
+    temp_text = f'{temperature}°C'
+    temp_bbox = draw.textbbox((0, 0), temp_text, font=temp_font)
+    temp_width = temp_bbox[2] - temp_bbox[0]
+    temp_x = width - temp_width - 10
+    draw.text((temp_x, 10), temp_text, font=temp_font, fill=0)
+
+    draw.line([(0, temp_bbox[3] + padding), (width, temp_bbox[3] + padding)], fill=0)
+
+    # Draw the humidity
+    hum_font = ImageFont.truetype("Arial", 20)
+    hum_text = f'Humidity: {humidity}%'
+    hum_bbox = draw.textbbox((0, 0), hum_text, font=hum_font)
+    hum_width = hum_bbox[2] - hum_bbox[0]
+    hum_x = width - hum_width - 10
+    draw.text((hum_x, temp_bbox[3] + padding), hum_text, font=hum_font, fill=0)
+
+    # Draw the conditions
+    cond_font = ImageFont.truetype("Arial", 16)
+    cond_text = f'Conditions: {conditions}'
+    cond_bbox = draw.textbbox((0, 0), cond_text, font=cond_font)
+    cond_width = cond_bbox[2] - cond_bbox[0]
+    cond_x = width - cond_width - 10
+    draw.text((cond_x, temp_bbox[3] + hum_bbox[3] + padding * 2), cond_text, font=cond_font, fill=0)
+
+    wind_font = ImageFont.truetype("Arial", 16)
+    wind_text = f'Wind: {wind_speed} km/h'
+    wind_bbox = draw.textbbox((0, 0), wind_text, font=wind_font)
+    wind_width = wind_bbox[2] - wind_bbox[0]
+    wind_x = width - wind_width - 10
+    draw.text((wind_x, temp_bbox[3] + hum_bbox[3] + cond_bbox[3] + padding * 3), wind_text, font=wind_font, fill=0)
+
+    return image
