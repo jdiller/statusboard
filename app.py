@@ -7,6 +7,8 @@ from logconfig import configure_logging
 from io import BytesIO
 from repository import Repository
 from reminder import Reminder
+from dataclasses import asdict
+import json
 
 config = get_config()
 logger = configure_logging(config)
@@ -87,12 +89,17 @@ def weather():
 @app.route('/reminders', methods=['POST'])
 def create_reminder():
     data = request.get_json()
-    required = ['id', 'message', 'time', 'list']
+    required = ['id', 'message', 'time', 'list', 'location', 'completed']
 
     if not all(key in data for key in required):
         return jsonify({'error': 'Invalid data'}), 400
 
-    reminder = Reminder(id=data['id'], message=data['message'], time=data['time'], list=data['list'])
+    reminder = Reminder(id=data['id'],
+                        message=data['message'],
+                        time=data['time'],
+                        list=data['list'],
+                        location=data['location'],
+                        completed=data['completed'] )
     repo.save_reminder(reminder)
     return jsonify({'message': 'Reminder created successfully'}), 201
 
@@ -102,11 +109,16 @@ def get_reminder(reminder_id):
     if reminder is None:
         return jsonify({'error': 'Reminder not found'}), 404
 
-    return jsonify({
-        'id': reminder.id,
-        'message': reminder.message,
-        'time': reminder.time
-    }), 200
+    return jsonify(asdict(reminder)), 200
+
+@app.route('/reminders', methods=['GET'])
+def get_all_reminders():
+    reminders = repo.get_all_reminders()
+    reminders_list = [
+        {'id': reminder.id, 'message': reminder.message, 'time': reminder.time}
+        for reminder in reminders
+    ]
+    return jsonify(reminders_list), 200
 
 if __name__ == '__main__':
     app.run(debug=True)

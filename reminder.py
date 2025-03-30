@@ -7,3 +7,5 @@ class Reminder:
     message: str
     time: datetime
     list: str
+    location: str
+    completed: bool
