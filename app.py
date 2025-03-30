@@ -7,17 +7,11 @@ from logconfig import configure_logging
 from io import BytesIO
 from repository import Repository
 from reminder import Reminder
-from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
 config = get_config()
 logger = configure_logging(config)
 
-
 app = Flask(__name__)
-
-wsgi_app = DispatcherMiddleware(None, {
-    config['server']['webroot']: app
-})
 
 repo = Repository(host='redis', port=6379)
 
