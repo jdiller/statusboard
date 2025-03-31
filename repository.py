@@ -15,7 +15,7 @@ class Repository:
         reminder_data = json.dumps({
             'id': reminder.id,
             'message': reminder.message,
-            'time': reminder.time.isoformat(),
+            'time': reminder.time.isoformat() if reminder.time else '',
             'list': reminder.list,
             'location': reminder.location,
             'completed': reminder.completed
