@@ -22,7 +22,10 @@ def get_charging_meter_image():
     ha = HomeAssistant(config)
     car_state_of_charge = ha.get_value('sensor.ix_xdrive50_remaining_battery_percent')
     car_charging_target = ha.get_value('sensor.ix_xdrive50_charging_target')
-    img = drawing.create_charging_meter_image(int(car_state_of_charge['state']), int(car_charging_target['state']))
+    if 'error' in car_state_of_charge or 'error' in car_charging_target:
+        img = drawing.create_error_image(car_state_of_charge['error'])
+    else:
+        img = drawing.create_charging_meter_image(int(car_state_of_charge['state']), int(car_charging_target['state']))
     return img
 
 @app.route('/weather_image_bytes')
