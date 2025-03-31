@@ -25,7 +25,7 @@ def create_reminders_image(reminders, width=800, height=240):
         draw.text((0, offset), f'- {reminder.message}', font=font, fill=0)
         offset += (font.size + PADDING)
         if reminder.time:
-            draw.text((20, offset), reminder.time, font=sub_font, fill=0)
+            draw.text((20, offset), reminder.time.strftime('%b %d, %I:%M %p'), font=sub_font, fill=0)
             offset += (sub_font.size + PADDING)
         if reminder.location:
             draw.text((20, offset), reminder.location.replace('\n', ' '), font=sub_font, fill=0)
