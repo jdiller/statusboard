@@ -28,7 +28,7 @@ def create_reminders_image(reminders, width=800, height=240):
             draw.text((20, offset), reminder.time, font=sub_font, fill=0)
             offset += (sub_font.size + PADDING)
         if reminder.location:
-            draw.text((20, offset), reminder.location, font=sub_font, fill=0)
+            draw.text((20, offset), reminder.location.replace('\n', ' '), font=sub_font, fill=0)
             offset += (sub_font.size + PADDING)
         offset += (10 + PADDING)
         if offset + font.size > height:
