@@ -107,7 +107,7 @@ def create_reminder():
     logger.info('Creating a new reminder')
     data = request.get_json()
     required = ['id', 'message', 'time', 'list', 'location', 'completed']
-
+    logger.info(f'Received data: {data}')
     if not all(key in data for key in required):
         logger.warning('Invalid data for creating reminder')
         return jsonify({'error': 'Invalid data'}), 400
