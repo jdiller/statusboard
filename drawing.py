@@ -1,6 +1,33 @@
 from PIL import Image, ImageDraw, ImageFont
 from titlecase import titlecase
 
+def create_error_image(message, width=200, height=80):
+    image = Image.new('1', (width, height), 1)
+    draw = ImageDraw.Draw(image)
+    font = ImageFont.truetype("LiberationSans-Regular", 11)
+    draw.text((0, 0), message, font=font, fill=0)
+    return image
+
+def create_reminders_image(reminders, width=800, height=240):
+    image = Image.new('1', (width, height), 1)
+    draw = ImageDraw.Draw(image)
+    font = ImageFont.truetype("LiberationSans-Regular", 18)
+    sub_font = ImageFont.truetype("LiberationSans-Regular", 12)
+    offset = 0
+    for reminder in reminders:
+        draw.text((0, 0), f'- {reminder.message}', font=font, fill=0)
+        offset += font.size
+        if reminder.time:
+            draw.text((20, offset), reminder.time, font=sub_font, fill=0)
+            offset += sub_font.size
+        if reminder.location:
+            draw.text((20, offset), reminder.location, font=sub_font, fill=0)
+            offset += sub_font.size
+        offset += 10
+        if offset + font.size > height:
+            break
+    return image
+
 def create_charging_meter_image(current_percentage, target_percentage, width=200, height=80):
     # Create a new image with white background
     image = Image.new('1', (width, height), 1)
