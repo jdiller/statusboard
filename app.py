@@ -91,7 +91,8 @@ def weather():
 
 @app.route('/reminders_image')
 def reminders_image():
-    img = drawing.create_reminders_image()
+    reminders = repo.get_all_reminders()
+    img = drawing.create_reminders_image(reminders)
     img_io = BytesIO()
     img.save(img_io, 'BMP')
     img_io.seek(0)
