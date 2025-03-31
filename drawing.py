@@ -11,23 +11,26 @@ def create_error_image(message, width=200, height=80):
     return image
 
 def create_reminders_image(reminders, width=800, height=240):
+    PADDING = 3
     logging.info(f'Creating reminders image for {len(reminders)} reminders')
     image = Image.new('1', (width, height), 1)
     draw = ImageDraw.Draw(image)
+    title_font = ImageFont.truetype("LiberationSans-Bold", 22)
     font = ImageFont.truetype("LiberationSans-Regular", 18)
     sub_font = ImageFont.truetype("LiberationSans-Regular", 12)
-    offset = 0
+    draw.text((0, 0), 'Reminders', font=title_font, fill=0)
+    offset = title_font.size + PADDING
     for reminder in reminders:
         logging.info(f'Creating reminder image for {reminder.message}')
         draw.text((0, offset), f'- {reminder.message}', font=font, fill=0)
-        offset += font.size
+        offset += (font.size + PADDING)
         if reminder.time:
             draw.text((20, offset), reminder.time, font=sub_font, fill=0)
-            offset += sub_font.size
+            offset += (sub_font.size + PADDING)
         if reminder.location:
             draw.text((20, offset), reminder.location, font=sub_font, fill=0)
-            offset += sub_font.size
-        offset += 10
+            offset += (sub_font.size + PADDING)
+        offset += (10 + PADDING)
         if offset + font.size > height:
             break
     return image
