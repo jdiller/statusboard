@@ -89,6 +89,16 @@ def weather():
 
     return send_file(img_io, mimetype='image/bmp')
 
+@app.route('/reminders_image')
+def reminders_image():
+    img = drawing.create_reminders_image()
+    img_io = BytesIO()
+    img.save(img_io, 'BMP')
+    img_io.seek(0)
+
+    return send_file(img_io, mimetype='image/bmp')
+
+
 @app.route('/reminders', methods=['POST'])
 def create_reminder():
     data = request.get_json()
