@@ -10,6 +10,7 @@ from reminder import Reminder
 from dataclasses import asdict
 import json
 import logging
+from datetime import datetime
 
 config = get_config()
 logger = configure_logging(config)
@@ -111,12 +112,21 @@ def create_reminder():
         logger.warning('Invalid data for creating reminder')
         return jsonify({'error': 'Invalid data'}), 400
 
-    reminder = Reminder(id=data['id'],
-                        message=data['message'],
-                        time=data['time'],
-                        list=data['list'],
-                        location=data['location'],
-                        completed=data['completed'] )
+    try:
+        # Convert the ISO-8601 time string to a datetime object
+        reminder_time = datetime.fromisoformat(data['time'])
+    except ValueError as e:
+        logger.error(f"Time conversion error: {e}")
+        return jsonify({'error': 'Invalid time format'}), 400
+
+    reminder = Reminder(
+        id=data['id'],
+        message=data['message'],
+        time=reminder_time,
+        list=data['list'],
+        location=data['location'],
+        completed=data['completed']
+    )
     repo.save_reminder(reminder)
     logger.info('Reminder created successfully')
     return jsonify({'message': 'Reminder created successfully'}), 201
