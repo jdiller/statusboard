@@ -20,7 +20,7 @@ def create_reminders_image(reminders, width=800, height=240):
     sub_font = ImageFont.truetype("LiberationSans-Regular", 12)
     draw.text((0, 0), 'Reminders', font=title_font, fill=0)
     offset = title_font.size + PADDING
-    for reminder in [x for x in reminders if not x['completed']]:
+    for reminder in [x for x in reminders if not x.completed == "Yes"]:
         logging.info(f'Creating reminder image for {reminder.message}')
         draw.text((0, offset), f'- {reminder.message}', font=font, fill=0)
         offset += (font.size + PADDING)
