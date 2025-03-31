@@ -1,7 +1,9 @@
 from PIL import Image, ImageDraw, ImageFont
 from titlecase import titlecase
+import logging
 
 def create_error_image(message, width=200, height=80):
+    logging.info(f'Creating error image with message: {message}')
     image = Image.new('1', (width, height), 1)
     draw = ImageDraw.Draw(image)
     font = ImageFont.truetype("LiberationSans-Regular", 11)
@@ -9,12 +11,14 @@ def create_error_image(message, width=200, height=80):
     return image
 
 def create_reminders_image(reminders, width=800, height=240):
+    logging.info(f'Creating reminders image for {len(reminders)} reminders')
     image = Image.new('1', (width, height), 1)
     draw = ImageDraw.Draw(image)
     font = ImageFont.truetype("LiberationSans-Regular", 18)
     sub_font = ImageFont.truetype("LiberationSans-Regular", 12)
     offset = 0
     for reminder in reminders:
+        logging.info(f'Creating reminder image for {reminder.message}')
         draw.text((0, 0), f'- {reminder.message}', font=font, fill=0)
         offset += font.size
         if reminder.time:
@@ -29,6 +33,7 @@ def create_reminders_image(reminders, width=800, height=240):
     return image
 
 def create_charging_meter_image(current_percentage, target_percentage, width=200, height=80):
+    logging.info(f'Creating charging meter image for {current_percentage}% and {target_percentage}%')
     # Create a new image with white background
     image = Image.new('1', (width, height), 1)
     draw = ImageDraw.Draw(image)
@@ -79,6 +84,7 @@ def create_charging_meter_image(current_percentage, target_percentage, width=200
     return image
 
 def image_to_packed_bytes(image):
+    logging.info('Converting image to packed bytes')
     # Ensure the image is in '1' mode (1-bit pixels, black and white)
     if image.mode != '1':
         image = image.convert('1')
@@ -112,6 +118,7 @@ def image_to_packed_bytes(image):
     return packed_bytes
 
 def get_weather_icon(condition_id):
+    logging.info(f'Getting weather icon for condition ID: {condition_id}')
     match(condition_id):
         case x if x in range(200, 233): #thunderstorm
             return '\uebdb'
@@ -131,6 +138,7 @@ def get_weather_icon(condition_id):
             return '\ue2bd'
 
 def create_weather_image(temperature, humidity, conditions_id, conditions_text, wind_speed, width=300, height=200):
+    logging.info(f'Creating weather image with temperature: {temperature}, humidity: {humidity}, conditions: {conditions_text}, wind speed: {wind_speed}')
     padding = 17
     image = Image.new('1', (width, height), 1)
     draw = ImageDraw.Draw(image)
