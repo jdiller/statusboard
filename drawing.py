@@ -19,7 +19,7 @@ def create_reminders_image(reminders, width=800, height=240):
     offset = 0
     for reminder in reminders:
         logging.info(f'Creating reminder image for {reminder.message}')
-        draw.text((0, 0), f'- {reminder.message}', font=font, fill=0)
+        draw.text((0, offset), f'- {reminder.message}', font=font, fill=0)
         offset += font.size
         if reminder.time:
             draw.text((20, offset), reminder.time, font=sub_font, fill=0)
