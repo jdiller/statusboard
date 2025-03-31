@@ -112,17 +112,10 @@ def create_reminder():
         logger.warning('Invalid data for creating reminder')
         return jsonify({'error': 'Invalid data'}), 400
 
-    try:
-        # Convert the ISO-8601 time string to a datetime object
-        reminder_time = datetime.fromisoformat(data['time'])
-    except ValueError as e:
-        logger.error(f"Time conversion error: {e}")
-        return jsonify({'error': 'Invalid time format'}), 400
-
     reminder = Reminder(
         id=data['id'],
         message=data['message'],
-        time=reminder_time,
+        time=datetime.fromisoformat(data['time']) if data['time'] != '' else None,
         list=data['list'],
         location=data['location'],
         completed=data['completed']
