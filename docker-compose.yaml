@@ -9,7 +9,6 @@ services:
       FLASK_ENV: development
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      SCRIPT_NAME: /statusboard
   redis:
     image: "redis:alpine"
     ports:
