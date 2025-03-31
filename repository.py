@@ -9,7 +9,7 @@ class Repository:
         self.client = redis.StrictRedis(host=host, port=port, db=db, decode_responses=True)
 
     def save_reminder(self, reminder: Reminder):
-        EXPIRE_TIME = 1800
+        EXPIRE_TIME = 60 * 60 * 8 #8 hours
         """Serialize and save a Reminder object in Redis."""
         reminder_key = f"reminder:{reminder.id}"
         reminder_data = json.dumps(asdict(reminder))
