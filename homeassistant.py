@@ -10,7 +10,8 @@ class HomeAssistant:
         try:
             response = requests.get(
                 f'{self.ha_url}/api/states/{entity_id}',
-                headers={'Authorization': f'Bearer {self.ha_token}'}
+                headers={'Authorization': f'Bearer {self.ha_token}'},
+                timeout=5
             )
             response.raise_for_status()  # Raises an HTTPError for bad responses
             return response.json()
