@@ -2,7 +2,7 @@ from PIL import Image, ImageDraw, ImageFont
 from titlecase import titlecase
 import logging
 
-def create_error_image(message, width=200, height=80):
+def create_error_image(message, width=400, height=240):
     logging.info(f'Creating error image with message: {message}')
     image = Image.new('1', (width, height), 1)
     draw = ImageDraw.Draw(image)
@@ -35,7 +35,7 @@ def create_reminders_image(reminders, width=800, height=240):
             break
     return image
 
-def create_charging_meter_image(current_percentage, target_percentage, width=200, height=80):
+def create_charging_meter_image(current_percentage, target_percentage, width=400, height=240):
     logging.info(f'Creating charging meter image for {current_percentage}% and {target_percentage}%')
     # Create a new image with white background
     image = Image.new('1', (width, height), 1)
