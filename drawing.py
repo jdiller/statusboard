@@ -186,3 +186,35 @@ def create_weather_image(temperature, humidity, conditions_id, conditions_text, 
     draw.text((wind_x, temp_bbox[3] + hum_bbox[3] + cond_bbox[3] + padding * 3), wind_text, font=wind_font, fill=0)
 
     return image
+
+def create_statusboard_image(weather_img, battery_img, reminders_img, width=800, height=480):
+    """Combine weather, battery, and reminders images into a single statusboard image."""
+    logging.info("Creating statusboard image")
+    # Create a new image with white background
+    image = Image.new('1', (width, height), 1)
+
+    # Calculate dimensions
+    quarter_width = width // 2
+    quarter_height = height // 2
+
+    # Resize the input images to fit their designated areas
+    weather_img = weather_img.resize((quarter_width, quarter_height))
+    battery_img = battery_img.resize((quarter_width, quarter_height))
+    reminders_img = reminders_img.resize((width, quarter_height))
+
+    # Paste the images into their respective positions
+    image.paste(battery_img, (0, 0))  # Top-left quarter
+    image.paste(weather_img, (quarter_width, 0))  # Top-right quarter
+    image.paste(reminders_img, (0, quarter_height))  # Bottom half
+
+    # Draw dividing lines
+    draw = ImageDraw.Draw(image)
+
+    # Vertical line between top-left and top-right
+    draw.line([(quarter_width, 0), (quarter_width, quarter_height)], fill=0)
+
+    # Horizontal line between top and bottom
+    draw.line([(0, quarter_height), (width, quarter_height)], fill=0)
+
+    logging.info("Statusboard image created successfully")
+    return image

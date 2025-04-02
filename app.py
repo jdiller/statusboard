@@ -144,5 +144,52 @@ def get_all_reminders():
     ]
     return jsonify(reminders_list), 200
 
+@app.route('/statusboard')
+def statusboard():
+    logger.info('Generating statusboard image')
+
+    # Get the individual images
+    weather_img = get_weather_image()
+    battery_img = get_charging_meter_image()
+
+    # Get reminders and create reminders image
+    reminders = repo.get_all_reminders()
+    reminders_img = drawing.create_reminders_image(reminders)
+
+    # Combine the images into one statusboard
+    combined_img = drawing.create_statusboard_image(weather_img, battery_img, reminders_img)
+
+    # Convert image to byte stream
+    img_io = BytesIO()
+    combined_img.save(img_io, 'BMP')
+    img_io.seek(0)
+
+    # Return image as response
+    return send_file(img_io, mimetype='image/bmp')
+
+@app.route('/statusboard_bytes')
+def statusboard_bytes():
+    logger.info('Generating statusboard image bytes')
+
+    # Get the individual images
+    weather_img = get_weather_image()
+    battery_img = get_charging_meter_image()
+
+    # Get reminders and create reminders image
+    reminders = repo.get_all_reminders()
+    reminders_img = drawing.create_reminders_image(reminders)
+
+    # Combine the images into one statusboard
+    combined_img = drawing.create_statusboard_image(weather_img, battery_img, reminders_img)
+
+    # Convert to packed bytes
+    byte_array = drawing.image_to_packed_bytes(combined_img)
+    byte_io = BytesIO(byte_array)
+
+    # Create a response with the byte array
+    response = make_response(send_file(byte_io, mimetype='application/octet-stream'))
+    response.headers['Content-Disposition'] = 'attachment; filename=statusboard.bin'
+    return response
+
 if __name__ == '__main__':
     app.run(debug=True)
