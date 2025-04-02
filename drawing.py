@@ -132,7 +132,7 @@ def get_weather_icon(condition_id):
         case x if x in range(600, 622): #snow
             return '\ue2cd'
         case x if x in range(700, 781): #mist
-            return '\ue188'
+            return '\ue818'
         case 800: #clear
             return '\ue81a'
         case 801 | 802: #partly cloudy
