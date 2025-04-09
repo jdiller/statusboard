@@ -20,6 +20,7 @@ def create_reminders_image(reminders, width=800, height=240):
     sub_font = ImageFont.truetype("LiberationSans-Regular", 12)
     draw.text((0, 0), 'Reminders', font=title_font, fill=0)
     offset = title_font.size + PADDING
+
     for reminder in [x for x in reminders if not x.completed == "Yes"]:
         logging.info(f'Creating reminder image for {reminder.message}')
         draw.text((0, offset), f'- {reminder.message}', font=font, fill=0)
@@ -35,7 +36,7 @@ def create_reminders_image(reminders, width=800, height=240):
             break
     return image
 
-def create_charging_meter_image(current_percentage, target_percentage, width=400, height=240):
+def create_charging_meter_image(current_percentage, target_percentage, width=100, height=60):
     logging.info(f'Creating charging meter image for {current_percentage}% and {target_percentage}%')
     # Create a new image with white background
     image = Image.new('1', (width, height), 1)
@@ -43,7 +44,7 @@ def create_charging_meter_image(current_percentage, target_percentage, width=400
 
     # Define dimensions and positions
     padding = 2
-    meter_height = 50
+    meter_height = height // 3
     meter_top = height - meter_height - padding
     meter_left = padding
     meter_width = width - padding * 2
@@ -55,34 +56,76 @@ def create_charging_meter_image(current_percentage, target_percentage, width=400
     current_x = int((current_percentage / 100) * meter_width) + meter_left
     target_x = int((target_percentage / 100) * meter_width) + meter_left
 
-    # Draw the filled bar for current percentage
+    # Fill the area beyond the target with a diagonal stripe pattern
     bar_top = meter_top + padding
     bar_height = meter_height - padding * 2
+
+    # Pattern for the area beyond the target (the portion that will remain empty)
+    pattern_left = target_x
+    pattern_right = meter_left + meter_width - padding
+
+    # Draw diagonal stripes in the "beyond target" area
+    stripe_spacing = 4  # pixels between stripes
+
+    # Calculate diagonal lines across the entire meter to ensure they're parallel
+    for offset in range(0, meter_width + bar_height, stripe_spacing):
+        x1 = meter_left + offset
+        y1 = bar_top
+        x2 = meter_left + offset - bar_height
+        y2 = bar_top + bar_height
+
+        # Create a line segment based on the diagonal line
+        line_points = []
+
+        # Only draw the portion of the line that's within the "beyond target" area
+        if x1 >= pattern_left and x1 <= pattern_right:
+            line_points.append((x1, y1))
+        if x2 >= pattern_left and x2 <= pattern_right:
+            line_points.append((x2, y2))
+
+        # If line crosses the pattern boundaries
+        if (x1 < pattern_left and x2 > pattern_left) or (x1 > pattern_left and x2 < pattern_left):
+            # Find the y-coordinate where the line crosses the left boundary
+            slope = (y2 - y1) / (x2 - x1) if x2 != x1 else 0
+            y_at_left = y1 + slope * (pattern_left - x1)
+            line_points.append((pattern_left, y_at_left))
+
+        if (x1 < pattern_right and x2 > pattern_right) or (x1 > pattern_right and x2 < pattern_right):
+            # Find the y-coordinate where the line crosses the right boundary
+            slope = (y2 - y1) / (x2 - x1) if x2 != x1 else 0
+            y_at_right = y1 + slope * (pattern_right - x1)
+            line_points.append((pattern_right, y_at_right))
+
+        # Sort points by x-coordinate to ensure proper line drawing
+        line_points.sort(key=lambda p: p[0])
+
+        # Draw the line if we have at least 2 points
+        if len(line_points) >= 2:
+            draw.line([line_points[0], line_points[-1]], fill=0, width=1)
+
+    # Draw the filled bar for current percentage (solid black)
     draw.rounded_rectangle([meter_left + padding, bar_top, current_x, bar_top + bar_height], 5, fill=0)
 
-    # Add target percentage text above the meter
-    font = ImageFont.truetype("LiberationSans-Regular", 11)
-    target_text = f'Target = {target_percentage}%'
-    text_bbox = draw.textbbox((0, 0), target_text, font=font)
-    text_width = text_bbox[2] - text_bbox[0]
-    text_x = target_x - (text_width // 2)
-    draw.text((text_x, 0), target_text, font=font, fill=0)
-
-    # Draw the target line
-    draw.line([(target_x, text_bbox[3] + padding), (target_x, bar_top + bar_height)], fill=0)
-
     # Add current percentage text inside the bar
-    charge_font = ImageFont.truetype("LiberationMono-Regular", 20)
+    charge_font = ImageFont.truetype("LiberationMono-Regular", height // 5)
     charge_text = f'{current_percentage}%'
     charge_text_bbox = draw.textbbox((0, 0), charge_text, font=charge_font)
     charge_text_width = charge_text_bbox[2] - charge_text_bbox[0]
     charge_text_height = charge_text_bbox[3] - charge_text_bbox[1]
-    charge_text_x = current_x - (charge_text_width // 2) + padding
-    charge_text_y = bar_top + (charge_text_height // 2)
+
+    # Center the text horizontally in the meter
+    text_x = meter_left + (meter_width // 2) - (charge_text_width // 2)
+
+    # Center the text vertically in the bar
+    text_y = bar_top + (bar_height // 2) - (charge_text_height // 2)
+
+    # Choose text color based on charge level
     if current_percentage > 30:
-        draw.text((charge_text_x // 2, charge_text_y + padding * 2), charge_text, font=charge_font, fill=255)
+        # White text on black background
+        draw.text((text_x, text_y), charge_text, font=charge_font, fill=255)
     else:
-        draw.text((meter_width // 2- (charge_text_width // 2) + padding * 2, charge_text_y + padding), charge_text, font=charge_font, fill=0)
+        # Black text on white background
+        draw.text((text_x, text_y), charge_text, font=charge_font, fill=0)
 
     return image
 
@@ -122,23 +165,30 @@ def image_to_packed_bytes(image):
 
 def get_weather_icon(condition_id):
     logging.info(f'Getting weather icon for condition ID: {condition_id}')
-    match(condition_id):
-        case x if x in range(200, 233): #thunderstorm
-            return '\uebdb'
-        case x if x in range(300, 322): #drizzle
-            return '\ue61e'
-        case x if x in range(500, 531): #rain
-            return '\uf176'
-        case x if x in range(600, 622): #snow
-            return '\ue2cd'
-        case x if x in range(700, 781): #mist
-            return '\ue818'
-        case 800: #clear
-            return '\ue81a'
-        case 801 | 802: #partly cloudy
-            return '\uf172'
-        case 803 | 804: #cloudy
-            return '\ue2bd'
+    try:
+        match(condition_id):
+            case x if x in range(200, 233): #thunderstorm
+                return chr(0xebdb)
+            case x if x in range(300, 322): #drizzle
+                return chr(0xe61e)
+            case x if x in range(500, 531): #rain
+                return chr(0xf176)
+            case x if x in range(600, 622): #snow
+                return chr(0xe2cd)
+            case x if x in range(700, 781): #mist
+                return chr(0xe818)
+            case 800: #clear
+                return chr(0xe518)
+            case 801 | 802: #partly cloudy
+                return chr(0xf172)
+            case 803 | 804: #cloudy
+                return chr(0xe2bd)
+            case _:  # Default case
+                logging.warning(f"Unknown condition ID: {condition_id}")
+                return chr(0xe81a)  # Default to "clear" icon
+    except Exception as e:
+        logging.error(f"Error getting weather icon: {e}")
+        return "?"  # Fallback to a simple character
 
 def create_weather_image(temperature, humidity, conditions_id, conditions_text, wind_speed, width=300, height=200):
     logging.info(f'Creating weather image with temperature: {temperature}, humidity: {humidity}, conditions: {conditions_text}, wind speed: {wind_speed}')
@@ -165,10 +215,22 @@ def create_weather_image(temperature, humidity, conditions_id, conditions_text, 
     draw.text((hum_x, temp_bbox[3] + padding), hum_text, font=hum_font, fill=0)
 
     # Draw the weather icon
-    icon = get_weather_icon(conditions_id)
-    with open("assets/MaterialIconsOutlined-Regular.otf", "rb") as f:
-        icon_font = ImageFont.truetype(f, 64)
-        draw.text((10,10), icon, font=icon_font, fill=0)
+    try:
+        icon = get_weather_icon(conditions_id)
+        # Load icon font
+        with open("assets/MaterialIconsOutlined-Regular.otf", "rb") as f:
+            icon_font = ImageFont.truetype(f, 64)
+
+        # Verify icon can be drawn
+        text_bbox = draw.textbbox((0, 0), icon, font=icon_font)
+        if text_bbox[2] > 0:  # If width > 0, it's probably valid
+            draw.text((10, 10), icon, font=icon_font, fill=0)
+        else:
+            logging.warning(f"Invalid icon for condition {conditions_id}")
+            draw.text((10, 10), "?", font=ImageFont.load_default(), fill=0)
+    except Exception as e:
+        logging.error(f"Error rendering weather icon: {e}")
+        draw.text((10, 10), "!", font=ImageFont.load_default(), fill=0)
 
     # Draw the conditions
     cond_font = ImageFont.truetype("LiberationSans-Regular", 16)
@@ -197,13 +259,17 @@ def create_statusboard_image(weather_img, battery_img, reminders_img, width=800,
     quarter_width = width // 2
     quarter_height = height // 2
 
-    # Resize the input images to fit their designated areas
+    # Create a blank quarter-sized image for the battery section
+    battery_section = Image.new('1', (quarter_width, quarter_height), 1)
+    # Place the original battery image (without resizing) at the top-left of the quarter
+    battery_section.paste(battery_img, (0, 0))
+
+    # Resize the weather image to fit its designated area
     weather_img = weather_img.resize((quarter_width, quarter_height))
-    battery_img = battery_img.resize((quarter_width, quarter_height))
     reminders_img = reminders_img.resize((width, quarter_height))
 
     # Paste the images into their respective positions
-    image.paste(battery_img, (0, 0))  # Top-left quarter
+    image.paste(battery_section, (0, 0))  # Top-left quarter
     image.paste(weather_img, (quarter_width, 0))  # Top-right quarter
     image.paste(reminders_img, (0, quarter_height))  # Bottom half
 

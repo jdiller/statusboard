@@ -8,8 +8,6 @@ from io import BytesIO
 from repository import Repository
 from reminder import Reminder
 from dataclasses import asdict
-import json
-import logging
 from datetime import datetime
 
 config = get_config()
