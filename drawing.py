@@ -170,19 +170,19 @@ def get_weather_icon(condition_id):
             case x if x in range(200, 233): #thunderstorm
                 return chr(0xebdb)
             case x if x in range(300, 322): #drizzle
-                return chr(0xe61e)
+                return chr(0xf61e)
             case x if x in range(500, 531): #rain
                 return chr(0xf176)
             case x if x in range(600, 622): #snow
-                return chr(0xe2cd)
+                return chr(0xe80f)
             case x if x in range(700, 781): #mist
                 return chr(0xe818)
             case 800: #clear
                 return chr(0xe518)
             case 801 | 802: #partly cloudy
-                return chr(0xf172)
+                return chr(0xe42d)
             case 803 | 804: #cloudy
-                return chr(0xe2bd)
+                return chr(0xe42d)
             case _:  # Default case
                 logging.warning(f"Unknown condition ID: {condition_id}")
                 return chr(0xe81a)  # Default to "clear" icon
@@ -218,7 +218,7 @@ def create_weather_image(temperature, humidity, conditions_id, conditions_text, 
     try:
         icon = get_weather_icon(conditions_id)
         # Load icon font
-        with open("assets/MaterialIconsOutlined-Regular.otf", "rb") as f:
+        with open("assets/MaterialSymbolsOutlined.ttf", "rb") as f:
             icon_font = ImageFont.truetype(f, 64)
 
         # Verify icon can be drawn
@@ -283,4 +283,104 @@ def create_statusboard_image(weather_img, battery_img, reminders_img, width=800,
     draw.line([(0, quarter_height), (width, quarter_height)], fill=0)
 
     logging.info("Statusboard image created successfully")
+    return image
+
+def create_test_image(width=800, height=480):
+    """Create a test image with all weather icons and battery gauge variants."""
+    logging.info("Creating test image with all icons and battery gauges")
+
+    # Create a new image with white background
+    image = Image.new('1', (width, height), 1)
+    draw = ImageDraw.Draw(image)
+
+    # Define overall padding
+    padding = 10
+
+    # Load font for labels
+    label_font = ImageFont.truetype("LiberationSans-Regular", 12)
+
+    # Section 1: Weather Icons
+    # Weather icon condition IDs to test
+    weather_conditions = [
+        (210, "Thunderstorm"),  # 200-232 range
+        (310, "Drizzle"),       # 300-321 range
+        (510, "Rain"),          # 500-531 range
+        (610, "Snow"),          # 600-622 range
+        (710, "Mist"),          # 700-781 range
+        (800, "Clear"),         # 800
+        (801, "Partly Cloudy"), # 801-802 range
+        (803, "Cloudy")         # 803-804 range
+    ]
+
+    # Draw weather icons
+    icon_size = 64
+    icon_spacing = 20
+    icon_x = padding
+    icon_y = padding
+
+    draw.text((icon_x, icon_y), "Weather Icons:", font=label_font, fill=0)
+    icon_y += 25
+
+    try:
+        with open("assets/MaterialSymbolsOutlined.ttf", "rb") as f:
+            icon_font = ImageFont.truetype(f, icon_size)
+
+        for i, (condition_id, label) in enumerate(weather_conditions):
+            # Draw icon
+            icon = get_weather_icon(condition_id)
+            draw.text((icon_x, icon_y), icon, font=icon_font, fill=0)
+
+            # Draw label below
+            text_bbox = draw.textbbox((0, 0), label, font=label_font)
+            text_width = text_bbox[2] - text_bbox[0]
+            text_x = icon_x + (icon_size // 2) - (text_width // 2)
+            draw.text((text_x, icon_y + icon_size + 5), label, font=label_font, fill=0)
+
+            # Move to next position
+            icon_x += icon_size + icon_spacing
+
+            # Wrap to next row if needed
+            if icon_x + icon_size > width - padding:
+                icon_x = padding
+                icon_y += icon_size + 35
+    except Exception as e:
+        logging.error(f"Error rendering weather icons: {e}")
+        draw.text((padding, icon_y), f"Error: {e}", font=label_font, fill=0)
+
+    # Move down to the battery gauge section
+    y_offset = icon_y + icon_size + 40
+
+    # Section 2, 3, 4: Battery gauges with different targets
+    battery_section_height = (height - y_offset - padding * 2) // 3
+    battery_width = 150
+    battery_height = 50
+
+    # Draw three sections with different target percentages
+    target_percentages = [50, 80, 100]
+    charge_percentages = [10, 30, 50, 80, 100]
+
+    for i, target in enumerate(target_percentages):
+        section_y = y_offset + i * battery_section_height
+
+        # Draw section label
+        draw.text((padding, section_y), f"Battery Gauges (Target: {target}%):", font=label_font, fill=0)
+        section_y += 20
+
+        # Draw battery gauges
+        for j, charge in enumerate(charge_percentages):
+            gauge_x = padding + j * (battery_width + 10)
+
+            # Create battery gauge
+            gauge = create_charging_meter_image(charge, target, battery_width, battery_height)
+
+            # Paste it into the main image
+            image.paste(gauge, (gauge_x, section_y))
+
+            # Add charge level label below
+            text = f"{charge}%"
+            text_bbox = draw.textbbox((0, 0), text, font=label_font)
+            text_width = text_bbox[2] - text_bbox[0]
+            text_x = gauge_x + (battery_width // 2) - (text_width // 2)
+            draw.text((text_x, section_y + battery_height + 5), text, font=label_font, fill=0)
+
     return image

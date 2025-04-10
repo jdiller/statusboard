@@ -189,5 +189,20 @@ def statusboard_bytes():
     response.headers['Content-Disposition'] = 'attachment; filename=statusboard.bin'
     return response
 
+@app.route('/test_image')
+def test_image():
+    logger.info('Generating test image with all icons and battery gauges')
+
+    # Generate the test image
+    img = drawing.create_test_image()
+
+    # Convert image to byte stream
+    img_io = BytesIO()
+    img.save(img_io, 'BMP')
+    img_io.seek(0)
+
+    # Return image as response
+    return send_file(img_io, mimetype='image/bmp')
+
 if __name__ == '__main__':
     app.run(debug=True)
