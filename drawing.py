@@ -67,41 +67,9 @@ def create_charging_meter_image(current_percentage, target_percentage, width=100
     # Draw diagonal stripes in the "beyond target" area
     stripe_spacing = 4  # pixels between stripes
 
-    # Calculate diagonal lines across the entire meter to ensure they're parallel
-    for offset in range(0, meter_width + bar_height, stripe_spacing):
-        x1 = meter_left + offset
-        y1 = bar_top
-        x2 = meter_left + offset - bar_height
-        y2 = bar_top + bar_height
-
-        # Create a line segment based on the diagonal line
-        line_points = []
-
-        # Only draw the portion of the line that's within the "beyond target" area
-        if x1 >= pattern_left and x1 <= pattern_right:
-            line_points.append((x1, y1))
-        if x2 >= pattern_left and x2 <= pattern_right:
-            line_points.append((x2, y2))
-
-        # If line crosses the pattern boundaries
-        if (x1 < pattern_left and x2 > pattern_left) or (x1 > pattern_left and x2 < pattern_left):
-            # Find the y-coordinate where the line crosses the left boundary
-            slope = (y2 - y1) / (x2 - x1) if x2 != x1 else 0
-            y_at_left = y1 + slope * (pattern_left - x1)
-            line_points.append((pattern_left, y_at_left))
-
-        if (x1 < pattern_right and x2 > pattern_right) or (x1 > pattern_right and x2 < pattern_right):
-            # Find the y-coordinate where the line crosses the right boundary
-            slope = (y2 - y1) / (x2 - x1) if x2 != x1 else 0
-            y_at_right = y1 + slope * (pattern_right - x1)
-            line_points.append((pattern_right, y_at_right))
-
-        # Sort points by x-coordinate to ensure proper line drawing
-        line_points.sort(key=lambda p: p[0])
-
-        # Draw the line if we have at least 2 points
-        if len(line_points) >= 2:
-            draw.line([line_points[0], line_points[-1]], fill=0, width=1)
+    if target_percentage < 100:
+    # Draw diagonal stripes in the "beyond target" area
+        draw_diagonal_pattern(draw, pattern_left, pattern_right, ref_left=meter_left, bar_top=bar_top, bar_height=bar_height, stripe_spacing=stripe_spacing, fill=0, width=1)
 
     # Draw the filled bar for current percentage (solid black)
     draw.rounded_rectangle([meter_left + padding, bar_top, current_x, bar_top + bar_height], 5, fill=0)
@@ -128,6 +96,60 @@ def create_charging_meter_image(current_percentage, target_percentage, width=100
         draw.text((text_x, text_y), charge_text, font=charge_font, fill=0)
 
     return image
+
+def draw_diagonal_pattern(draw, pattern_left, pattern_right, ref_left, bar_top, bar_height, stripe_spacing=4, fill=0, width=1):
+    """
+    Draw a diagonal stripe pattern within the specified boundaries.
+
+    Args:
+        draw: ImageDraw object to draw on
+        pattern_left: Left boundary of the pattern area
+        pattern_right: Right boundary of the pattern area
+        ref_left: Left reference point for calculating diagonal lines
+        bar_top: Top boundary of the pattern area
+        bar_height: Height of the pattern area
+        stripe_spacing: Pixels between diagonal stripes
+        fill: Color to use for the stripes
+        width: Line width for the stripes
+    """
+    # Calculate the total width needed for diagonal calculation
+    total_width = pattern_right - ref_left
+
+    # Calculate diagonal lines across the entire area to ensure they're parallel
+    for offset in range(0, total_width + bar_height, stripe_spacing):
+        x1 = ref_left + offset
+        y1 = bar_top
+        x2 = ref_left + offset - bar_height
+        y2 = bar_top + bar_height
+
+        # Create a line segment based on the diagonal line
+        line_points = []
+
+        # Only draw the portion of the line that's within the pattern area
+        if x1 >= pattern_left and x1 <= pattern_right:
+            line_points.append((x1, y1))
+        if x2 >= pattern_left and x2 <= pattern_right:
+            line_points.append((x2, y2))
+
+        # If line crosses the pattern boundaries
+        if (x1 < pattern_left and x2 > pattern_left) or (x1 > pattern_left and x2 < pattern_left):
+            # Find the y-coordinate where the line crosses the left boundary
+            slope = (y2 - y1) / (x2 - x1) if x2 != x1 else 0
+            y_at_left = y1 + slope * (pattern_left - x1)
+            line_points.append((pattern_left, y_at_left))
+
+        if (x1 < pattern_right and x2 > pattern_right) or (x1 > pattern_right and x2 < pattern_right):
+            # Find the y-coordinate where the line crosses the right boundary
+            slope = (y2 - y1) / (x2 - x1) if x2 != x1 else 0
+            y_at_right = y1 + slope * (pattern_right - x1)
+            line_points.append((pattern_right, y_at_right))
+
+        # Sort points by x-coordinate to ensure proper line drawing
+        line_points.sort(key=lambda p: p[0])
+
+        # Draw the line if we have at least 2 points
+        if len(line_points) >= 2:
+            draw.line([line_points[0], line_points[-1]], fill=fill, width=width)
 
 def image_to_packed_bytes(image):
     logging.info('Converting image to packed bytes')
