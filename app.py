@@ -22,11 +22,13 @@ def get_charging_meter_image():
     ha = HomeAssistant(config)
     car_state_of_charge = ha.get_value('sensor.ix_xdrive50_remaining_battery_percent')
     car_charging_target = ha.get_value('sensor.ix_xdrive50_charging_target')
+    car_charging = ha.get_value('switch.ix_xdrive50_charging')
+    print(car_charging)
     if 'error' in car_state_of_charge or 'error' in car_charging_target:
         logger.error('Error fetching car status')
         img = drawing.create_error_image(car_state_of_charge.get('error', 'Unknown error'))
     else:
-        img = drawing.create_charging_meter_image(int(car_state_of_charge['state']), int(car_charging_target['state']))
+        img = drawing.create_charging_meter_image(int(car_state_of_charge['state']), int(car_charging_target['state']), car_charging['state'] == 'on')
     return img
 
 @app.route('/weather_image_bytes')

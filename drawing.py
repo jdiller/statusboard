@@ -36,18 +36,19 @@ def create_reminders_image(reminders, width=800, height=240):
             break
     return image
 
-def create_charging_meter_image(current_percentage, target_percentage, width=100, height=60):
+def create_charging_meter_image(current_percentage, target_percentage, charging, width=100, height=60):
     logging.info(f'Creating charging meter image for {current_percentage}% and {target_percentage}%')
     # Create a new image with white background
     image = Image.new('1', (width, height), 1)
     draw = ImageDraw.Draw(image)
 
     # Define dimensions and positions
+    right_padding = 10
     padding = 2
     meter_height = height // 3
     meter_top = height - meter_height - padding
     meter_left = padding
-    meter_width = width - padding * 2
+    meter_width = width - padding * 2 - right_padding
 
     # Draw an empty meter
     draw.rounded_rectangle([meter_left, meter_top, meter_left + meter_width, meter_top + meter_height], 5, outline=0)
@@ -95,6 +96,11 @@ def create_charging_meter_image(current_percentage, target_percentage, width=100
         # Black text on white background
         draw.text((text_x, text_y), charge_text, font=charge_font, fill=0)
 
+    if charging:
+        with open("assets/MaterialSymbolsOutlined.ttf", "rb") as f:
+            charging_font = ImageFont.truetype(f, 16)
+        charging_glyph = chr(0xec1c)
+        draw.text((width - padding - right_padding, bar_top - padding), charging_glyph, font=charging_font, fill=0)
     return image
 
 def draw_diagonal_pattern(draw, pattern_left, pattern_right, ref_left, bar_top, bar_height, stripe_spacing=4, fill=0, width=1):
@@ -387,13 +393,13 @@ def create_test_image(width=800, height=480):
         # Draw section label
         draw.text((padding, section_y), f"Battery Gauges (Target: {target}%):", font=label_font, fill=0)
         section_y += 20
-
+        charging = False
         # Draw battery gauges
         for j, charge in enumerate(charge_percentages):
             gauge_x = padding + j * (battery_width + 10)
-
+            charging = not charging
             # Create battery gauge
-            gauge = create_charging_meter_image(charge, target, battery_width, battery_height)
+            gauge = create_charging_meter_image(charge, target, charging, battery_width, battery_height)
 
             # Paste it into the main image
             image.paste(gauge, (gauge_x, section_y))
