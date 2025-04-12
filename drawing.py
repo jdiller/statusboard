@@ -232,10 +232,8 @@ def create_weather_image(temperature, humidity, conditions_id, conditions_text, 
     temp_x = width - temp_width - 10
     draw.text((temp_x, 10), temp_text, font=temp_font, fill=0)
 
-    draw.line([(0, temp_bbox[3] + padding), (width, temp_bbox[3] + padding)], fill=0)
-
     # Draw the humidity
-    hum_font = ImageFont.truetype("LiberationSans-Regular", 20)
+    hum_font = ImageFont.truetype("LiberationSans-Bold", 20)
     hum_text = f'Humidity: {humidity}%'
     hum_bbox = draw.textbbox((0, 0), hum_text, font=hum_font)
     hum_width = hum_bbox[2] - hum_bbox[0]
@@ -247,7 +245,7 @@ def create_weather_image(temperature, humidity, conditions_id, conditions_text, 
         icon = get_weather_icon(conditions_id)
         # Load icon font
         with open("assets/MaterialSymbolsOutlined.ttf", "rb") as f:
-            icon_font = ImageFont.truetype(f, 64)
+            icon_font = ImageFont.truetype(f, 84)
 
         # Verify icon can be drawn
         text_bbox = draw.textbbox((0, 0), icon, font=icon_font)
@@ -261,20 +259,23 @@ def create_weather_image(temperature, humidity, conditions_id, conditions_text, 
         draw.text((10, 10), "!", font=ImageFont.load_default(), fill=0)
 
     # Draw the conditions
-    cond_font = ImageFont.truetype("LiberationSans-Regular", 16)
+    cond_font = ImageFont.truetype("LiberationSans-Bold", 16)
     cond_text = f'{titlecase(conditions_text)}'
     cond_bbox = draw.textbbox((0, 0), cond_text, font=cond_font)
     cond_width = cond_bbox[2] - cond_bbox[0]
     cond_x = width - cond_width - 10
     draw.text((cond_x, temp_bbox[3] + hum_bbox[3] + padding * 2), cond_text, font=cond_font, fill=0)
 
-    wind_font = ImageFont.truetype("LiberationSans-Regular", 16)
+    wind_font = ImageFont.truetype("LiberationSans-Bold", 16)
     wind_text = f'Wind: {wind_speed} km/h'
     wind_bbox = draw.textbbox((0, 0), wind_text, font=wind_font)
     wind_width = wind_bbox[2] - wind_bbox[0]
     wind_x = width - wind_width - 10
     draw.text((wind_x, temp_bbox[3] + hum_bbox[3] + cond_bbox[3] + padding * 3), wind_text, font=wind_font, fill=0)
 
+    draw.rectangle([(0, height-20), (width, height)], fill=0)
+    title_font = ImageFont.truetype("LiberationSans-Bold", 15)
+    draw.text((10, height-18), 'Weather', font=title_font, fill=1)
     return image
 
 def create_statusboard_image(weather_img, battery_img, reminders_img, width=800, height=480):
