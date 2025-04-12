@@ -100,7 +100,7 @@ def statusboard():
     reminders = repo.get_all_reminders()
     undated_reminders = [reminder for reminder in reminders if reminder.time is None]
     dated_reminders = sorted([reminder for reminder in reminders if reminder.time is not None],
-                             key=lambda x: datetime.fromisoformat(x.time))
+                             key=lambda x: x.time)
 
     display_reminders = undated_reminders + dated_reminders
     reminders_img = drawing.create_reminders_image(display_reminders)
