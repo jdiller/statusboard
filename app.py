@@ -31,17 +31,6 @@ def get_charging_meter_image():
         img = drawing.create_charging_meter_image(int(car_state_of_charge['state']), int(car_charging_target['state']), car_charging['state'] == 'on')
     return img
 
-@app.route('/weather_image_bytes')
-def weather_image_bytes():
-    logger.info('Generating weather image bytes')
-    img = get_weather_image()
-    byte_array = drawing.image_to_packed_bytes(img)
-    byte_io = BytesIO(byte_array)
-
-    response = make_response(send_file(byte_io, mimetype='application/octet-stream'))
-    response.headers['Content-Disposition'] = 'attachment; filename=bytes.bin'
-    return response
-
 def get_weather_image():
     logger.info('Fetching weather data for image')
     weather = Weather(config)
@@ -52,55 +41,10 @@ def get_weather_image():
     img = drawing.create_weather_image(temperature, humidity, conditions_id, conditions_text, wind_speed)
     return img
 
-@app.route('/car_battery_bytes')
-def image_bytes():
-    logger.info('Generating car battery image bytes')
-    img = get_charging_meter_image()
-    byte_array = drawing.image_to_packed_bytes(img)
-
-    # Create a BytesIO object from the byte array
-    byte_io = BytesIO(byte_array)
-
-    # Create a response with the byte array
-    response = make_response(send_file(byte_io, mimetype='application/octet-stream'))
-    response.headers['Content-Disposition'] = 'attachment; filename=bytes.bin'
-    return response
-
 @app.route('/')
 def index():
     logger.info('Health check endpoint accessed')
     return jsonify({'status': 'healthy'})
-
-@app.route('/car_battery')
-def car_battery():
-    logger.info('Generating car battery image')
-    img = get_charging_meter_image()
-    img_io = BytesIO()
-    img.save(img_io, 'BMP')
-    img_io.seek(0)
-
-    return send_file(img_io, mimetype='image/bmp')
-
-@app.route('/weather')
-def weather():
-    logger.info('Generating weather image')
-    img = get_weather_image()
-    img_io = BytesIO()
-    img.save(img_io, 'BMP')
-    img_io.seek(0)
-
-    return send_file(img_io, mimetype='image/bmp')
-
-@app.route('/reminders_image')
-def reminders_image():
-    logger.info('Generating reminders image')
-    reminders = repo.get_all_reminders()
-    img = drawing.create_reminders_image(reminders)
-    img_io = BytesIO()
-    img.save(img_io, 'BMP')
-    img_io.seek(0)
-
-    return send_file(img_io, mimetype='image/bmp')
 
 @app.route('/reminders', methods=['POST'])
 def create_reminder():
