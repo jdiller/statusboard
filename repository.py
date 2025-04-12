@@ -32,7 +32,7 @@ class Repository:
         reminder_data = self.client.get(reminder_key)
         if reminder_data:
             reminder_dict = json.loads(reminder_data)
-            if reminder_dict['time'] != '':
+            if reminder_dict['time'] and not isinstance(reminder_dict['time'], datetime):
                 reminder_dict['time'] = datetime.fromisoformat(reminder_dict['time'])
             logging.info(f"Reminder found: {reminder_dict}")
             return Reminder(**reminder_dict)
@@ -48,7 +48,7 @@ class Repository:
             reminder_data = self.client.get(key)
             if reminder_data:
                 reminder_dict = json.loads(reminder_data)
-                if reminder_dict['time'] != '':
+                if reminder_dict['time'] and not isinstance(reminder_dict['time'], datetime):
                     reminder_dict['time'] = datetime.fromisoformat(reminder_dict['time'])
                 reminders.append(Reminder(**reminder_dict))
         logging.info(f"Total reminders fetched: {len(reminders)}")
