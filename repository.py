@@ -23,7 +23,7 @@ class Repository:
             'completed': reminder.completed
         })
         logging.info(f"Saving reminder with key: {reminder_key} and data: {reminder_data}")
-        self.client.set(reminder_key, reminder_data)
+        self.client.set(reminder_key, reminder_data, ex=60*60*8)
 
     def get_reminder(self, reminder_id: str) -> Reminder:
         """Fetch and deserialize a Reminder object from Redis."""
