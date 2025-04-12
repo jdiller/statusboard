@@ -98,7 +98,10 @@ def statusboard():
 
     # Get reminders and create reminders image
     reminders = repo.get_all_reminders()
-    reminders_img = drawing.create_reminders_image(reminders)
+    undated_reminders = [reminder for reminder in reminders if reminder.time is None]
+    dated_reminders = sorted([reminder for reminder in reminders if reminder.time is not None], key=lambda x: x.time)
+    display_reminders = undated_reminders + dated_reminders
+    reminders_img = drawing.create_reminders_image(display_reminders)
 
     # Combine the images into one statusboard
     combined_img = drawing.create_statusboard_image(weather_img, battery_img, reminders_img)
