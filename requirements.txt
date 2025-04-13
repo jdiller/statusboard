@@ -6,3 +6,4 @@ pillow
 titlecase
 uvicorn
 redis
+aiohttp
