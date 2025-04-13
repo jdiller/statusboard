@@ -22,13 +22,27 @@ def get_charging_meter_image():
     ha = HomeAssistant(config)
     car_state_of_charge = ha.get_value('sensor.ix_xdrive50_remaining_battery_percent')
     car_charging_target = ha.get_value('sensor.ix_xdrive50_charging_target')
-    car_charging = ha.get_value('switch.ix_xdrive50_charging')
-    print(car_charging)
+    car_charging = ha.get_value('binary_sensor.ix_xdrive50_charging_status_2')
+    car_plugged_in = ha.get_value('binary_sensor.ix_xdrive50_connection_status')
+    logger.info(f'Car charging: {car_charging}')
+    logger.info(f'Car plugged in: {car_plugged_in}')
     if 'error' in car_state_of_charge or 'error' in car_charging_target:
         logger.error('Error fetching car status')
         img = drawing.create_error_image(car_state_of_charge.get('error', 'Unknown error'))
     else:
-        img = drawing.create_charging_meter_image(int(car_state_of_charge['state']), int(car_charging_target['state']), car_charging['state'] == 'on')
+        img = drawing.create_charging_meter_image(int(car_state_of_charge['state']),
+                                                  int(car_charging_target['state']),
+                                                  car_charging['state'] == 'on',
+                                                  car_plugged_in['state'] == 'on',
+                                                  label_text="iX Battery: ")
+    return img
+
+def get_range_image():
+    logger.info('Fetching car status for range image')
+    ha = HomeAssistant(config)
+    car_range = ha.get_value('sensor.ix_xdrive50_remaining_range_total')
+    logger.info(f'Car range: {car_range}')
+    img = drawing.create_label_value_image('Range', f'{car_range["state"]} km')
     return img
 
 def get_weather_image():
@@ -95,6 +109,7 @@ def statusboard():
     # Get the individual images
     weather_img = get_weather_image()
     battery_img = get_charging_meter_image()
+    range_img = get_range_image()
 
     # Get reminders and create reminders image
     reminders = repo.get_all_reminders()
@@ -110,7 +125,7 @@ def statusboard():
     reminders_img = drawing.create_reminders_image(display_reminders)
 
     # Combine the images into one statusboard
-    combined_img = drawing.create_statusboard_image(weather_img, battery_img, reminders_img)
+    combined_img = drawing.create_statusboard_image(weather_img, battery_img, range_img, reminders_img)
 
     # Convert image to byte stream
     img_io = BytesIO()

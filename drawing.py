@@ -36,8 +36,24 @@ def create_reminders_image(reminders, width=800, height=240):
             break
     return image
 
-def create_charging_meter_image(current_percentage, target_percentage, charging, width=100, height=60):
+def create_label_value_image(label: str, value: str, width=200, height=25) -> Image.Image:
+    logging.info(f'Creating label-value image: {label}={value}')
+    image = Image.new('1', (width, height), 1)
+    draw = ImageDraw.Draw(image)
+    label_font = ImageFont.truetype("LiberationSans-Bold", 18)
+    value_font = ImageFont.truetype("LiberationSans-Regular", 18)
+    label_bbox = draw.textbbox((0, 0), f'{label}: ', font=label_font)
+
+    draw.text((0, 0), f'{label}: ', font=label_font, fill=0)
+    value_bbox = draw.textbbox((0, 0), value, font=value_font)
+    draw.text((width - value_bbox[2], 0), value, font=value_font, fill=0)
+    return image
+
+def create_charging_meter_image(current_percentage: int, target_percentage: int,
+                               charging: bool, plugged_in: bool,
+                               label_text: str = "", width: int = 200, height: int = 25) -> Image.Image:
     logging.info(f'Creating charging meter image for {current_percentage}% and {target_percentage}%')
+
     # Create a new image with white background
     image = Image.new('1', (width, height), 1)
     draw = ImageDraw.Draw(image)
@@ -45,10 +61,30 @@ def create_charging_meter_image(current_percentage, target_percentage, charging,
     # Define dimensions and positions
     right_padding = 10
     padding = 2
-    meter_height = height // 3
-    meter_top = height - meter_height - padding
+    meter_height = height - padding * 2
+    meter_top = padding
     meter_left = padding
     meter_width = width - padding * 2 - right_padding
+    label_width = 0
+
+    if label_text:
+        logging.info(f'Adding label: {label_text}')
+        # Add a label
+        label_font = ImageFont.truetype("LiberationSans-Bold", 16)
+        label_bbox = draw.textbbox((padding, padding), label_text, font=label_font)
+        label_width = label_bbox[2] - label_bbox[0]
+
+        # Calculate vertical center position for the label
+        label_height = label_bbox[3] - label_bbox[1]
+        meter_center_y = meter_top + (meter_height / 2)
+        label_y = meter_center_y - (label_height / 2)
+
+        # Draw the label text vertically centered relative to the meter
+        draw.text((padding, label_y), label_text, font=label_font, fill=0)
+
+        # Adjust meter dimensions to account for label
+        meter_left = label_width + padding
+        meter_width = width - padding * 2 - right_padding - label_width
 
     # Draw an empty meter
     draw.rounded_rectangle([meter_left, meter_top, meter_left + meter_width, meter_top + meter_height], 5, outline=0)
@@ -76,7 +112,7 @@ def create_charging_meter_image(current_percentage, target_percentage, charging,
     draw.rounded_rectangle([meter_left + padding, bar_top, current_x, bar_top + bar_height], 5, fill=0)
 
     # Add current percentage text inside the bar
-    charge_font = ImageFont.truetype("LiberationMono-Regular", height // 5)
+    charge_font = ImageFont.truetype("LiberationMono-Regular", 16)
     charge_text = f'{current_percentage}%'
     charge_text_bbox = draw.textbbox((0, 0), charge_text, font=charge_font)
     charge_text_width = charge_text_bbox[2] - charge_text_bbox[0]
@@ -85,8 +121,9 @@ def create_charging_meter_image(current_percentage, target_percentage, charging,
     # Center the text horizontally in the meter
     text_x = meter_left + (meter_width // 2) - (charge_text_width // 2)
 
-    # Center the text vertically in the bar
-    text_y = bar_top + (bar_height // 2) - (charge_text_height // 2)
+    # Precisely center the text vertically in the bar
+    meter_center_y = bar_top + (bar_height // 2)
+    text_y = meter_center_y - (charge_text_height // 2) - padding
 
     # Choose text color based on charge level
     if current_percentage > 30:
@@ -96,10 +133,10 @@ def create_charging_meter_image(current_percentage, target_percentage, charging,
         # Black text on white background
         draw.text((text_x, text_y), charge_text, font=charge_font, fill=0)
 
-    if charging:
+    if charging or plugged_in:
         with open("assets/MaterialSymbolsOutlined.ttf", "rb") as f:
             charging_font = ImageFont.truetype(f, 16)
-        charging_glyph = chr(0xec1c)
+        charging_glyph = chr(0xec1c) if charging else chr(0xe63c)
         draw.text((width - padding - right_padding, bar_top - padding), charging_glyph, font=charging_font, fill=0)
     return image
 
@@ -278,7 +315,7 @@ def create_weather_image(temperature, humidity, conditions_id, conditions_text, 
     draw.text((10, height-18), 'Weather', font=title_font, fill=1)
     return image
 
-def create_statusboard_image(weather_img, battery_img, reminders_img, width=800, height=480):
+def create_statusboard_image(weather_img, battery_img, range_img, reminders_img, width=800, height=480):
     """Combine weather, battery, and reminders images into a single statusboard image."""
     logging.info("Creating statusboard image")
     # Create a new image with white background
@@ -292,6 +329,7 @@ def create_statusboard_image(weather_img, battery_img, reminders_img, width=800,
     battery_section = Image.new('1', (quarter_width, quarter_height), 1)
     # Place the original battery image (without resizing) at the top-left of the quarter
     battery_section.paste(battery_img, (0, 0))
+    battery_section.paste(range_img, (0, battery_img.height + 2))
 
     # Resize the weather image to fit its designated area
     weather_img = weather_img.resize((quarter_width, quarter_height))
@@ -382,7 +420,7 @@ def create_test_image(width=800, height=480):
     # Section 2, 3, 4: Battery gauges with different targets
     battery_section_height = (height - y_offset - padding * 2) // 3
     battery_width = 150
-    battery_height = 50
+    battery_height = 30
 
     # Draw three sections with different target percentages
     target_percentages = [50, 80, 100]
@@ -398,9 +436,10 @@ def create_test_image(width=800, height=480):
         # Draw battery gauges
         for j, charge in enumerate(charge_percentages):
             gauge_x = padding + j * (battery_width + 10)
-            charging = not charging
+            charging = j % 3 == 0
+            plugged_in = j % 3 == 1
             # Create battery gauge
-            gauge = create_charging_meter_image(charge, target, charging, battery_width, battery_height)
+            gauge = create_charging_meter_image(charge, target, charging, plugged_in, width=battery_width, height=battery_height)
 
             # Paste it into the main image
             image.paste(gauge, (gauge_x, section_y))
