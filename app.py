@@ -19,7 +19,10 @@ logger = configure_logging(config)
 
 app = FastAPI()
 
-repo = Repository(host='redis', port=6379)
+redis_host = config.get('redis', 'host', fallback='redis')
+redis_port = config.getint('redis', 'port', fallback=6379)
+reminder_ttl = config.getint('redis', 'reminder_ttl', fallback=60*60*8)  # Default 8 hours
+repo = Repository(host=redis_host, port=redis_port, reminder_ttl=reminder_ttl)
 
 @app.get("/")
 async def index():

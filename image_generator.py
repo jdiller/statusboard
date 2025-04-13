@@ -10,7 +10,7 @@ import logging
 
 config = get_config()
 logger = configure_logging(config)
-repo = Repository(host='redis', port=6379)
+repo = Repository(config)
 
 async def get_ups_meter_image():
     logger.info('Fetching UPS status for meter image')

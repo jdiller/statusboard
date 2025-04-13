@@ -5,11 +5,17 @@ from dataclasses import asdict
 from datetime import datetime
 import logging
 
+# Default TTL for reminders (8 hours in seconds)
+DEFAULT_REMINDER_TTL = 60 * 60 * 8
+
 class Repository:
 
-    def __init__(self, host='localhost', port=6379, db=0):
-        self.client = redis.StrictRedis(host=host, port=port, db=db, decode_responses=True)
-        logging.info(f"Connected to Redis at {host}:{port}, DB: {db}")
+    def __init__(self, config):
+        self.host = config.get('redis', 'host', fallback='redis')
+        self.port = config.getint('redis', 'port', fallback=6379)
+        self.client = redis.StrictRedis(host=self.host, port=self.port, decode_responses=True)
+        self.reminder_ttl = config.get('redis', 'reminder_ttl', fallback=DEFAULT_REMINDER_TTL)
+        logging.info(f"Connected to Redis at {self.host}:{self.port}")
 
     def save_reminder(self, reminder: Reminder):
         """Serialize and save a Reminder object in Redis."""
@@ -23,7 +29,7 @@ class Repository:
             'completed': reminder.completed
         })
         logging.info(f"Saving reminder with key: {reminder_key} and data: {reminder_data}")
-        self.client.set(reminder_key, reminder_data, ex=60*60*8)
+        self.client.set(reminder_key, reminder_data, ex=self.reminder_ttl)
 
     def get_reminder(self, reminder_id: str) -> Reminder:
         """Fetch and deserialize a Reminder object from Redis."""
