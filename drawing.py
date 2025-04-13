@@ -2,6 +2,8 @@ from PIL import Image, ImageDraw, ImageFont
 from titlecase import titlecase
 import logging
 from datetime import datetime
+from tzlocal import get_localzone
+
 def create_error_image(message, width=390, height=240):
     logging.info(f'Creating error image with message: {message}')
     image = Image.new('1', (width, height), 1)
@@ -346,7 +348,7 @@ def create_statusboard_image(weather_img, battery_img, range_img, ups_img,
 
     #Add a last-updated timestamp to the battery section
     last_updated_font = ImageFont.truetype("LiberationSans-Regular", 12)
-    last_updated_text = f'Last updated: {datetime.now().strftime("%b %d, %I:%M %p")}'
+    last_updated_text = f'Last updated: {datetime.now(get_localzone()).strftime("%b %d, %I:%M %p")}'
     last_updated_bbox = draw.textbbox((0, 0), last_updated_text, font=last_updated_font)
     last_updated_width = last_updated_bbox[2] - last_updated_bbox[0]
     last_updated_x = quarter_width - last_updated_width - 2

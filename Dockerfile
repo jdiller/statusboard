@@ -32,5 +32,7 @@ COPY assets /app/assets
 # Expose the port the app runs on
 EXPOSE 5000
 
+ENV TZ="America/Toronto"
+
 # Run the application with Uvicorn
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "5000"]

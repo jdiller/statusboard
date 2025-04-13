@@ -1,9 +1,8 @@
 fastapi
-google-auth
-google-auth-oauthlib
-Werkzeug>=2.2,<3.0
+Werkzeug
 pillow
 titlecase
 uvicorn
 redis
 aiohttp
+tzlocal
