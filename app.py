@@ -1,7 +1,8 @@
 import drawing
 from homeassistant import HomeAssistant
 from weather import Weather
-from flask import Flask, send_file, make_response, request, jsonify
+from fastapi import FastAPI, Response, HTTPException
+from fastapi.responses import JSONResponse, StreamingResponse
 from localconfig import get_config
 from logconfig import configure_logging
 from io import BytesIO
@@ -9,11 +10,12 @@ from repository import Repository
 from reminder import Reminder
 from dataclasses import asdict
 from datetime import datetime
+from typing import Dict, List, Optional, Any
 
 config = get_config()
 logger = configure_logging(config)
 
-app = Flask(__name__)
+app = FastAPI()
 
 repo = Repository(host='redis', port=6379)
 
@@ -55,44 +57,43 @@ def get_weather_image():
     img = drawing.create_weather_image(temperature, humidity, conditions_id, conditions_text, wind_speed)
     return img
 
-@app.route('/')
+@app.get("/")
 def index():
     logger.info('Health check endpoint accessed')
-    return jsonify({'status': 'healthy'})
+    return {"status": "healthy"}
 
-@app.route('/reminders', methods=['POST'])
-def create_reminder():
+@app.post("/reminders")
+def create_reminder(reminder_data: Dict[str, Any]):
     logger.info('Creating a new reminder')
-    data = request.get_json()
     required = ['id', 'message', 'time', 'list', 'location', 'completed']
-    logger.info(f'Received data: {data}')
-    if not all(key in data for key in required):
+    logger.info(f'Received data: {reminder_data}')
+    if not all(key in reminder_data for key in required):
         logger.warning('Invalid data for creating reminder')
-        return jsonify({'error': 'Invalid data'}), 400
+        raise HTTPException(status_code=400, detail="Invalid data")
 
     reminder = Reminder(
-        id=data['id'],
-        message=data['message'],
-        time=datetime.fromisoformat(data['time']) if data['time'] != '' else None,
-        list=data['list'],
-        location=data['location'],
-        completed=data['completed']
+        id=reminder_data['id'],
+        message=reminder_data['message'],
+        time=datetime.fromisoformat(reminder_data['time']) if reminder_data['time'] != '' else None,
+        list=reminder_data['list'],
+        location=reminder_data['location'],
+        completed=reminder_data['completed']
     )
     repo.save_reminder(reminder)
     logger.info('Reminder created successfully')
-    return jsonify({'message': 'Reminder created successfully'}), 201
+    return {"message": "Reminder created successfully"}
 
-@app.route('/reminders/<reminder_id>', methods=['GET'])
-def get_reminder(reminder_id):
+@app.get("/reminders/{reminder_id}")
+def get_reminder(reminder_id: str):
     logger.info(f'Fetching reminder with ID: {reminder_id}')
     reminder = repo.get_reminder(reminder_id)
     if reminder is None:
         logger.warning(f'Reminder with ID {reminder_id} not found')
-        return jsonify({'error': 'Reminder not found'}), 404
+        raise HTTPException(status_code=404, detail="Reminder not found")
 
-    return jsonify(asdict(reminder)), 200
+    return asdict(reminder)
 
-@app.route('/reminders', methods=['GET'])
+@app.get("/reminders")
 def get_all_reminders():
     logger.info('Fetching all reminders')
     reminders = repo.get_all_reminders()
@@ -100,9 +101,9 @@ def get_all_reminders():
         asdict(reminder)
         for reminder in reminders
     ]
-    return jsonify(reminders_list), 200
+    return reminders_list
 
-@app.route('/statusboard')
+@app.get("/statusboard")
 def statusboard():
     logger.info('Generating statusboard image')
 
@@ -133,33 +134,33 @@ def statusboard():
     img_io.seek(0)
 
     # Return image as response
-    return send_file(img_io, mimetype='image/bmp')
+    return StreamingResponse(img_io, media_type="image/bmp")
 
-@app.route('/statusboard_bytes')
+@app.get("/statusboard_bytes")
 def statusboard_bytes():
     logger.info('Generating statusboard image bytes')
 
     # Get the individual images
     weather_img = get_weather_image()
     battery_img = get_charging_meter_image()
+    range_img = get_range_image()
 
     # Get reminders and create reminders image
     reminders = repo.get_all_reminders()
     reminders_img = drawing.create_reminders_image(reminders)
 
     # Combine the images into one statusboard
-    combined_img = drawing.create_statusboard_image(weather_img, battery_img, reminders_img)
+    combined_img = drawing.create_statusboard_image(weather_img, battery_img, range_img, reminders_img)
 
     # Convert to packed bytes
     byte_array = drawing.image_to_packed_bytes(combined_img)
     byte_io = BytesIO(byte_array)
 
     # Create a response with the byte array
-    response = make_response(send_file(byte_io, mimetype='application/octet-stream'))
-    response.headers['Content-Disposition'] = 'attachment; filename=statusboard.bin'
-    return response
+    headers = {"Content-Disposition": "attachment; filename=statusboard.bin"}
+    return StreamingResponse(byte_io, media_type="application/octet-stream", headers=headers)
 
-@app.route('/test_image')
+@app.get('/test_image')
 def test_image():
     logger.info('Generating test image with all icons and battery gauges')
 
@@ -172,7 +173,8 @@ def test_image():
     img_io.seek(0)
 
     # Return image as response
-    return send_file(img_io, mimetype='image/bmp')
+    return StreamingResponse(img_io, media_type="image/bmp")
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=5000)
