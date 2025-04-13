@@ -1,8 +1,8 @@
 import drawing
 from homeassistant import HomeAssistant
 from weather import Weather
-from fastapi import FastAPI, Response, HTTPException
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import StreamingResponse
 from localconfig import get_config
 from logconfig import configure_logging
 from io import BytesIO
@@ -19,6 +19,20 @@ logger = configure_logging(config)
 app = FastAPI()
 
 repo = Repository(host='redis', port=6379)
+
+
+async def get_ups_meter_image():
+    logger.info('Fetching UPS status for meter image')
+    ha = HomeAssistant(config)
+    ups_status = await ha.get_value('sensor.cyberpower_battery_charge')
+    logger.info(f'UPS status: {ups_status}')
+    if 'error' in ups_status:
+        logger.error('Error fetching UPS status')
+        img = await asyncio.to_thread(drawing.create_error_image, ups_status.get('error', 'Unknown error'))
+    else:
+        img = await asyncio.to_thread(drawing.create_charging_meter_image, int(ups_status['state']), 100,
+                                      False, True, label_text="UPS Battery: ")
+    return img
 
 async def get_charging_meter_image():
     logger.info('Fetching car status for charging meter image')
@@ -64,6 +78,22 @@ async def get_range_image():
         'Range',
         f'{car_range["state"]} km'
     )
+    return img
+
+async def get_indoor_cameras_armed_image():
+    logger.info('Fetching indoor cameras armed status for image')
+    ha = HomeAssistant(config)
+    indoor_cameras_armed = await ha.get_value('alarm_control_panel.blink_indoor')
+    img = await asyncio.to_thread(drawing.create_label_value_image, 'Indoor',
+                                  'Armed' if indoor_cameras_armed['state'] == 'on' else 'Disarmed')
+    return img
+
+async def get_outdoor_cameras_armed_image():
+    logger.info('Fetching outdoor cameras armed status for image')
+    ha = HomeAssistant(config)
+    outdoor_cameras_armed = await ha.get_value('alarm_control_panel.blink_outdoor')
+    img = await asyncio.to_thread(drawing.create_label_value_image, 'Outdoor',
+                                  'Armed' if outdoor_cameras_armed['state'] == 'on' else 'Disarmed')
     return img
 
 async def get_weather_image():
@@ -139,10 +169,13 @@ async def statusboard():
     logger.info('Generating statusboard image')
 
     # Get the individual images in parallel
-    weather_img, battery_img, range_img = await asyncio.gather(
+    weather_img, battery_img, range_img, indoor_cameras_armed_img, outdoor_cameras_armed_img, ups_img = await asyncio.gather(
         get_weather_image(),
         get_charging_meter_image(),
-        get_range_image()
+        get_range_image(),
+        get_indoor_cameras_armed_image(),
+        get_outdoor_cameras_armed_image(),
+        get_ups_meter_image()
     )
 
     # Get reminders and create reminders image
@@ -164,6 +197,9 @@ async def statusboard():
         weather_img,
         battery_img,
         range_img,
+        indoor_cameras_armed_img,
+        outdoor_cameras_armed_img,
+        ups_img,
         reminders_img
     )
 

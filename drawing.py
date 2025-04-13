@@ -2,7 +2,7 @@ from PIL import Image, ImageDraw, ImageFont
 from titlecase import titlecase
 import logging
 
-def create_error_image(message, width=400, height=240):
+def create_error_image(message, width=390, height=240):
     logging.info(f'Creating error image with message: {message}')
     image = Image.new('1', (width, height), 1)
     draw = ImageDraw.Draw(image)
@@ -36,7 +36,7 @@ def create_reminders_image(reminders, width=800, height=240):
             break
     return image
 
-def create_label_value_image(label: str, value: str, width=200, height=25) -> Image.Image:
+def create_label_value_image(label: str, value: str, width=390, height=25) -> Image.Image:
     logging.info(f'Creating label-value image: {label}={value}')
     image = Image.new('1', (width, height), 1)
     draw = ImageDraw.Draw(image)
@@ -51,7 +51,7 @@ def create_label_value_image(label: str, value: str, width=200, height=25) -> Im
 
 def create_charging_meter_image(current_percentage: int, target_percentage: int,
                                charging: bool, plugged_in: bool,
-                               label_text: str = "", width: int = 200, height: int = 25) -> Image.Image:
+                               label_text: str = "", width: int = 390, height: int = 25) -> Image.Image:
     logging.info(f'Creating charging meter image for {current_percentage}% and {target_percentage}%')
 
     # Create a new image with white background
@@ -70,7 +70,7 @@ def create_charging_meter_image(current_percentage: int, target_percentage: int,
     if label_text:
         logging.info(f'Adding label: {label_text}')
         # Add a label
-        label_font = ImageFont.truetype("LiberationSans-Bold", 16)
+        label_font = label_font = ImageFont.truetype("LiberationSans-Bold", 18)
         label_bbox = draw.textbbox((padding, padding), label_text, font=label_font)
         label_width = label_bbox[2] - label_bbox[0]
 
@@ -315,7 +315,9 @@ def create_weather_image(temperature, humidity, conditions_id, conditions_text, 
     draw.text((10, height-18), 'Weather', font=title_font, fill=1)
     return image
 
-def create_statusboard_image(weather_img, battery_img, range_img, reminders_img, width=800, height=480):
+def create_statusboard_image(weather_img, battery_img, range_img, ups_img,
+                             indoor_cameras_armed_img, outdoor_cameras_armed_img,
+                             reminders_img, width=800, height=480):
     """Combine weather, battery, and reminders images into a single statusboard image."""
     logging.info("Creating statusboard image")
     # Create a new image with white background
@@ -327,10 +329,21 @@ def create_statusboard_image(weather_img, battery_img, range_img, reminders_img,
 
     # Create a blank quarter-sized image for the battery section
     battery_section = Image.new('1', (quarter_width, quarter_height), 1)
-    # Place the original battery image (without resizing) at the top-left of the quarter
-    battery_section.paste(battery_img, (0, 0))
-    battery_section.paste(range_img, (0, battery_img.height + 2))
-
+    #put a title on the battery section
+    title_font = ImageFont.truetype("LiberationSans-Bold", 15)
+    draw = ImageDraw.Draw(battery_section)
+    draw.rectangle([(0, 0), (quarter_width, title_font.size + 4)], fill=0)
+    draw.text((2, 2), 'Sensors', font=title_font, fill=255)
+    top_offset = title_font.size + 4
+    battery_section.paste(battery_img, (0, top_offset))
+    top_offset += battery_img.height + 2
+    battery_section.paste(range_img, (0, top_offset))
+    top_offset += range_img.height + 2
+    battery_section.paste(ups_img, (0, top_offset))
+    top_offset += ups_img.height + 2
+    battery_section.paste(indoor_cameras_armed_img, (0, top_offset))
+    top_offset += indoor_cameras_armed_img.height + 2
+    battery_section.paste(outdoor_cameras_armed_img, (0, top_offset))
     # Resize the weather image to fit its designated area
     weather_img = weather_img.resize((quarter_width, quarter_height))
     reminders_img = reminders_img.resize((width, quarter_height))
