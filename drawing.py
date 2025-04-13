@@ -1,7 +1,7 @@
 from PIL import Image, ImageDraw, ImageFont
 from titlecase import titlecase
 import logging
-
+from datetime import datetime
 def create_error_image(message, width=390, height=240):
     logging.info(f'Creating error image with message: {message}')
     image = Image.new('1', (width, height), 1)
@@ -42,7 +42,6 @@ def create_label_value_image(label: str, value: str, width=390, height=25) -> Im
     draw = ImageDraw.Draw(image)
     label_font = ImageFont.truetype("LiberationSans-Bold", 18)
     value_font = ImageFont.truetype("LiberationSans-Regular", 18)
-    label_bbox = draw.textbbox((0, 0), f'{label}: ', font=label_font)
 
     draw.text((0, 0), f'{label}: ', font=label_font, fill=0)
     value_bbox = draw.textbbox((0, 0), value, font=value_font)
@@ -72,7 +71,7 @@ def create_charging_meter_image(current_percentage: int, target_percentage: int,
         # Add a label
         label_font = label_font = ImageFont.truetype("LiberationSans-Bold", 18)
         label_bbox = draw.textbbox((padding, padding), label_text, font=label_font)
-        label_width = label_bbox[2] - label_bbox[0]
+        label_width = max(label_bbox[2] - label_bbox[0], 125)
 
         # Calculate vertical center position for the label
         label_height = label_bbox[3] - label_bbox[1]
@@ -344,6 +343,15 @@ def create_statusboard_image(weather_img, battery_img, range_img, ups_img,
     battery_section.paste(indoor_cameras_armed_img, (0, top_offset))
     top_offset += indoor_cameras_armed_img.height + 2
     battery_section.paste(outdoor_cameras_armed_img, (0, top_offset))
+
+    #Add a last-updated timestamp to the battery section
+    last_updated_font = ImageFont.truetype("LiberationSans-Regular", 12)
+    last_updated_text = f'Last updated: {datetime.now().strftime("%b %d, %I:%M %p")}'
+    last_updated_bbox = draw.textbbox((0, 0), last_updated_text, font=last_updated_font)
+    last_updated_width = last_updated_bbox[2] - last_updated_bbox[0]
+    last_updated_x = quarter_width - last_updated_width - 2
+    draw.text((last_updated_x, battery_section.height - last_updated_font.size - 2), last_updated_text, font=last_updated_font, fill=0)
+
     # Resize the weather image to fit its designated area
     weather_img = weather_img.resize((quarter_width, quarter_height))
     reminders_img = reminders_img.resize((width, quarter_height))
@@ -352,6 +360,7 @@ def create_statusboard_image(weather_img, battery_img, range_img, ups_img,
     image.paste(battery_section, (0, 0))  # Top-left quarter
     image.paste(weather_img, (quarter_width, 0))  # Top-right quarter
     image.paste(reminders_img, (0, quarter_height))  # Bottom half
+
 
     # Draw dividing lines
     draw = ImageDraw.Draw(image)
