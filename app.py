@@ -118,6 +118,43 @@ async def get_weather_image():
     )
     return img
 
+async def get_statusboard_image():
+    # Get the individual images in parallel
+    weather_img, battery_img, range_img, indoor_cameras_armed_img, outdoor_cameras_armed_img, ups_img = await asyncio.gather(
+        get_weather_image(),
+        get_charging_meter_image(),
+        get_range_image(),
+        get_indoor_cameras_armed_image(),
+        get_outdoor_cameras_armed_image(),
+        get_ups_meter_image()
+    )
+
+    # Get reminders and create reminders image
+    reminders = repo.get_all_reminders()
+    undated_reminders = [reminder for reminder in reminders if reminder.time is None or not isinstance(reminder.time, datetime)]
+    logger.info(f'Undated reminders: {len(undated_reminders)}')
+    dated_reminders = [reminder for reminder in reminders if (reminder.time is not None and isinstance(reminder.time, datetime))]
+    logger.info(f'Dated reminders: {len(dated_reminders)}')
+    dated_reminders = sorted(dated_reminders, key=lambda x: x.time)
+
+    display_reminders = undated_reminders + dated_reminders
+
+    # Run image creation in a thread
+    reminders_img = await asyncio.to_thread(drawing.create_reminders_image, display_reminders)
+
+    # Run image combination in a thread
+    combined_img = await asyncio.to_thread(
+        drawing.create_statusboard_image,
+        weather_img,
+        battery_img,
+        range_img,
+        indoor_cameras_armed_img,
+        outdoor_cameras_armed_img,
+        ups_img,
+        reminders_img
+    )
+    return combined_img
+
 @app.get("/")
 async def index():
     logger.info('Health check endpoint accessed')
@@ -168,40 +205,7 @@ async def get_all_reminders():
 async def statusboard():
     logger.info('Generating statusboard image')
 
-    # Get the individual images in parallel
-    weather_img, battery_img, range_img, indoor_cameras_armed_img, outdoor_cameras_armed_img, ups_img = await asyncio.gather(
-        get_weather_image(),
-        get_charging_meter_image(),
-        get_range_image(),
-        get_indoor_cameras_armed_image(),
-        get_outdoor_cameras_armed_image(),
-        get_ups_meter_image()
-    )
-
-    # Get reminders and create reminders image
-    reminders = repo.get_all_reminders()
-    undated_reminders = [reminder for reminder in reminders if reminder.time is None or not isinstance(reminder.time, datetime)]
-    logger.info(f'Undated reminders: {len(undated_reminders)}')
-    dated_reminders = [reminder for reminder in reminders if (reminder.time is not None and isinstance(reminder.time, datetime))]
-    logger.info(f'Dated reminders: {len(dated_reminders)}')
-    dated_reminders = sorted(dated_reminders, key=lambda x: x.time)
-
-    display_reminders = undated_reminders + dated_reminders
-
-    # Run image creation in a thread
-    reminders_img = await asyncio.to_thread(drawing.create_reminders_image, display_reminders)
-
-    # Run image combination in a thread
-    combined_img = await asyncio.to_thread(
-        drawing.create_statusboard_image,
-        weather_img,
-        battery_img,
-        range_img,
-        indoor_cameras_armed_img,
-        outdoor_cameras_armed_img,
-        ups_img,
-        reminders_img
-    )
+    combined_img = await get_statusboard_image()
 
     # Run image conversion in a thread
     img_io = BytesIO()
@@ -215,27 +219,7 @@ async def statusboard():
 async def statusboard_bytes():
     logger.info('Generating statusboard image bytes')
 
-    # Get the individual images in parallel
-    weather_img, battery_img, range_img = await asyncio.gather(
-        get_weather_image(),
-        get_charging_meter_image(),
-        get_range_image()
-    )
-
-    # Get reminders and create reminders image
-    reminders = repo.get_all_reminders()
-
-    # Run image creation in a thread
-    reminders_img = await asyncio.to_thread(drawing.create_reminders_image, reminders)
-
-    # Run image combination in a thread
-    combined_img = await asyncio.to_thread(
-        drawing.create_statusboard_image,
-        weather_img,
-        battery_img,
-        range_img,
-        reminders_img
-    )
+    combined_img = await get_statusboard_image()
 
     # Run byte packing in a thread
     byte_array = await asyncio.to_thread(drawing.image_to_packed_bytes, combined_img)
