@@ -36,13 +36,21 @@ async def get_charging_meter_image():
 
     if 'error' in car_state_of_charge or 'error' in car_charging_target:
         logger.error('Error fetching car status')
-        img = drawing.create_error_image(car_state_of_charge.get('error', 'Unknown error'))
+        # Run image creation in a thread
+        img = await asyncio.to_thread(
+            drawing.create_error_image,
+            car_state_of_charge.get('error', 'Unknown error')
+        )
     else:
-        img = drawing.create_charging_meter_image(int(car_state_of_charge['state']),
-                                                  int(car_charging_target['state']),
-                                                  car_charging['state'] == 'on',
-                                                  car_plugged_in['state'] == 'on',
-                                                  label_text="iX Battery: ")
+        # Run image creation in a thread
+        img = await asyncio.to_thread(
+            drawing.create_charging_meter_image,
+            int(car_state_of_charge['state']),
+            int(car_charging_target['state']),
+            car_charging['state'] == 'on',
+            car_plugged_in['state'] == 'on',
+            label_text="iX Battery: "
+        )
     return img
 
 async def get_range_image():
@@ -50,7 +58,12 @@ async def get_range_image():
     ha = HomeAssistant(config)
     car_range = await ha.get_value('sensor.ix_xdrive50_remaining_range_total')
     logger.info(f'Car range: {car_range}')
-    img = drawing.create_label_value_image('Range', f'{car_range["state"]} km')
+    # Run image creation in a thread
+    img = await asyncio.to_thread(
+        drawing.create_label_value_image,
+        'Range',
+        f'{car_range["state"]} km'
+    )
     return img
 
 async def get_weather_image():
@@ -64,7 +77,15 @@ async def get_weather_image():
         weather.get_wind_speed()
     )
     conditions_id, conditions_text = conditions
-    img = drawing.create_weather_image(temperature, humidity, conditions_id, conditions_text, wind_speed)
+    # Run image creation in a thread
+    img = await asyncio.to_thread(
+        drawing.create_weather_image,
+        temperature,
+        humidity,
+        conditions_id,
+        conditions_text,
+        wind_speed
+    )
     return img
 
 @app.get("/")
@@ -133,14 +154,22 @@ async def statusboard():
     dated_reminders = sorted(dated_reminders, key=lambda x: x.time)
 
     display_reminders = undated_reminders + dated_reminders
-    reminders_img = drawing.create_reminders_image(display_reminders)
 
-    # Combine the images into one statusboard
-    combined_img = drawing.create_statusboard_image(weather_img, battery_img, range_img, reminders_img)
+    # Run image creation in a thread
+    reminders_img = await asyncio.to_thread(drawing.create_reminders_image, display_reminders)
 
-    # Convert image to byte stream
+    # Run image combination in a thread
+    combined_img = await asyncio.to_thread(
+        drawing.create_statusboard_image,
+        weather_img,
+        battery_img,
+        range_img,
+        reminders_img
+    )
+
+    # Run image conversion in a thread
     img_io = BytesIO()
-    combined_img.save(img_io, 'BMP')
+    await asyncio.to_thread(lambda: combined_img.save(img_io, 'BMP'))
     img_io.seek(0)
 
     # Return image as response
@@ -159,13 +188,21 @@ async def statusboard_bytes():
 
     # Get reminders and create reminders image
     reminders = repo.get_all_reminders()
-    reminders_img = drawing.create_reminders_image(reminders)
 
-    # Combine the images into one statusboard
-    combined_img = drawing.create_statusboard_image(weather_img, battery_img, range_img, reminders_img)
+    # Run image creation in a thread
+    reminders_img = await asyncio.to_thread(drawing.create_reminders_image, reminders)
 
-    # Convert to packed bytes
-    byte_array = drawing.image_to_packed_bytes(combined_img)
+    # Run image combination in a thread
+    combined_img = await asyncio.to_thread(
+        drawing.create_statusboard_image,
+        weather_img,
+        battery_img,
+        range_img,
+        reminders_img
+    )
+
+    # Run byte packing in a thread
+    byte_array = await asyncio.to_thread(drawing.image_to_packed_bytes, combined_img)
     byte_io = BytesIO(byte_array)
 
     # Create a response with the byte array
@@ -176,12 +213,12 @@ async def statusboard_bytes():
 async def test_image():
     logger.info('Generating test image with all icons and battery gauges')
 
-    # Generate the test image
-    img = drawing.create_test_image()
+    # Generate the test image in a thread
+    img = await asyncio.to_thread(drawing.create_test_image)
 
-    # Convert image to byte stream
+    # Convert image to byte stream in a thread
     img_io = BytesIO()
-    img.save(img_io, 'BMP')
+    await asyncio.to_thread(lambda: img.save(img_io, 'BMP'))
     img_io.seek(0)
 
     # Return image as response
