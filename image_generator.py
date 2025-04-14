@@ -5,8 +5,8 @@ from localconfig import get_config
 from logconfig import configure_logging
 from repository import Repository
 from datetime import datetime
+from titlecase import titlecase
 import asyncio
-import logging
 
 config = get_config()
 logger = configure_logging(config)
@@ -76,7 +76,7 @@ async def get_indoor_cameras_armed_image():
     ha = HomeAssistant(config)
     indoor_cameras_armed = await ha.get_value('alarm_control_panel.blink_indoor')
     img = await asyncio.to_thread(drawing.create_label_value_image, 'Indoor',
-                                  'Armed' if indoor_cameras_armed['state'] == 'on' else 'Disarmed')
+                                  titlecase(indoor_cameras_armed['state'].replace("_", " ")))
     return img
 
 async def get_outdoor_cameras_armed_image():
@@ -84,7 +84,7 @@ async def get_outdoor_cameras_armed_image():
     ha = HomeAssistant(config)
     outdoor_cameras_armed = await ha.get_value('alarm_control_panel.blink_outdoor')
     img = await asyncio.to_thread(drawing.create_label_value_image, 'Outdoor',
-                                  'Armed' if outdoor_cameras_armed['state'] == 'on' else 'Disarmed')
+                                  titlecase(outdoor_cameras_armed['state'].replace("_", " ")))
     return img
 
 async def get_weather_image():
