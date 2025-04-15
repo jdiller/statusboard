@@ -1,8 +1,6 @@
 import drawing
 import asyncio
 import image_generator
-from homeassistant import HomeAssistant
-from weather import Weather
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from localconfig import get_config
@@ -12,7 +10,7 @@ from repository import Repository
 from reminder import Reminder
 from dataclasses import asdict
 from datetime import datetime
-from typing import Dict, List, Optional, Any
+from typing import Dict, Any
 
 config = get_config()
 logger = configure_logging(config)

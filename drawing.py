@@ -3,8 +3,9 @@ from titlecase import titlecase
 import logging
 from datetime import datetime
 from tzlocal import get_localzone
+from reminder import Reminder
 
-def create_error_image(message, width=390, height=240):
+def create_error_image(message: str, width: int = 390, height: int = 240) -> Image.Image:
     logging.info(f'Creating error image with message: {message}')
     image = Image.new('1', (width, height), 1)
     draw = ImageDraw.Draw(image)
@@ -12,7 +13,7 @@ def create_error_image(message, width=390, height=240):
     draw.text((0, 0), message, font=font, fill=0)
     return image
 
-def create_reminders_image(reminders, width=800, height=240):
+def create_reminders_image(reminders: list[Reminder], width: int = 800, height: int = 240) -> Image.Image:
     PADDING = 3
     logging.info(f'Creating reminders image for {len(reminders)} reminders')
     image = Image.new('1', (width, height), 1)
@@ -38,7 +39,7 @@ def create_reminders_image(reminders, width=800, height=240):
             break
     return image
 
-def create_label_value_image(label: str, value: str, width=390, height=25) -> Image.Image:
+def create_label_value_image(label: str, value: str, width: int = 390, height: int = 25) -> Image.Image:
     logging.info(f'Creating label-value image: {label}={value}')
     image = Image.new('1', (width, height), 1)
     draw = ImageDraw.Draw(image)
@@ -141,7 +142,9 @@ def create_charging_meter_image(current_percentage: int, target_percentage: int,
         draw.text((width - padding - right_padding, bar_top - padding), charging_glyph, font=charging_font, fill=0)
     return image
 
-def draw_diagonal_pattern(draw, pattern_left, pattern_right, ref_left, bar_top, bar_height, stripe_spacing=4, fill=0, width=1):
+def draw_diagonal_pattern(draw: ImageDraw, pattern_left: int, pattern_right: int,
+                          ref_left: int, bar_top: int , bar_height: int, stripe_spacing: int=4,
+                          fill: int =0, width: int =1):
     """
     Draw a diagonal stripe pattern within the specified boundaries.
 
@@ -195,7 +198,7 @@ def draw_diagonal_pattern(draw, pattern_left, pattern_right, ref_left, bar_top, 
         if len(line_points) >= 2:
             draw.line([line_points[0], line_points[-1]], fill=fill, width=width)
 
-def image_to_packed_bytes(image):
+def image_to_packed_bytes(image: Image.Image) -> bytearray:
     logging.info('Converting image to packed bytes')
     # Ensure the image is in '1' mode (1-bit pixels, black and white)
     if image.mode != '1':
@@ -229,7 +232,7 @@ def image_to_packed_bytes(image):
 
     return packed_bytes
 
-def get_weather_icon(condition_id):
+def get_weather_icon(condition_id: int) -> str:
     logging.info(f'Getting weather icon for condition ID: {condition_id}')
     try:
         match(condition_id):
@@ -256,7 +259,10 @@ def get_weather_icon(condition_id):
         logging.error(f"Error getting weather icon: {e}")
         return "?"  # Fallback to a simple character
 
-def create_weather_image(temperature, humidity, conditions_id, conditions_text, wind_speed, width=300, height=200):
+def create_weather_image(temperature: float, humidity: float,
+                         conditions_id: int, conditions_text: str,
+                         wind_speed: float, width: int = 300,
+                         height: int = 200) -> Image.Image:
     logging.info(f'Creating weather image with temperature: {temperature}, humidity: {humidity}, conditions: {conditions_text}, wind speed: {wind_speed}')
     padding = 17
     image = Image.new('1', (width, height), 1)
@@ -316,9 +322,9 @@ def create_weather_image(temperature, humidity, conditions_id, conditions_text, 
     draw.text((10, height-18), 'Weather', font=title_font, fill=1)
     return image
 
-def create_statusboard_image(weather_img, battery_img, range_img, ups_img,
-                             indoor_cameras_armed_img, outdoor_cameras_armed_img,
-                             reminders_img, width=800, height=480):
+def create_statusboard_image(weather_img: Image.Image, battery_img: Image.Image, range_img: Image.Image, ups_img: Image.Image,
+                             indoor_cameras_armed_img: Image.Image, outdoor_cameras_armed_img: Image.Image,
+                             reminders_img: Image.Image, width: int = 800, height: int = 480) -> Image.Image:
     """Combine weather, battery, and reminders images into a single statusboard image."""
     logging.info("Creating statusboard image")
     # Create a new image with white background
@@ -376,7 +382,7 @@ def create_statusboard_image(weather_img, battery_img, range_img, ups_img,
     logging.info("Statusboard image created successfully")
     return image
 
-def create_test_image(width=800, height=480):
+def create_test_image(width: int = 800, height: int = 480) -> Image.Image:
     """Create a test image with all weather icons and battery gauge variants."""
     logging.info("Creating test image with all icons and battery gauges")
 

@@ -12,7 +12,7 @@ config = get_config()
 logger = configure_logging(config)
 repo = Repository(config)
 
-async def get_ups_meter_image():
+async def get_ups_meter_image() -> drawing.Image:
     logger.info('Fetching UPS status for meter image')
     ha = HomeAssistant(config)
     ups_status = await ha.get_value('sensor.cyberpower_battery_charge')
@@ -25,7 +25,7 @@ async def get_ups_meter_image():
                                       False, True, label_text="UPS Battery: ")
     return img
 
-async def get_charging_meter_image():
+async def get_charging_meter_image() -> drawing.Image:
     logger.info('Fetching car status for charging meter image')
     ha = HomeAssistant(config)
     # Fetch all data in parallel
@@ -58,7 +58,7 @@ async def get_charging_meter_image():
         )
     return img
 
-async def get_range_image():
+async def get_range_image() -> drawing.Image:
     logger.info('Fetching car status for range image')
     ha = HomeAssistant(config)
     car_range = await ha.get_value('sensor.ix_xdrive50_remaining_range_total')
@@ -71,7 +71,7 @@ async def get_range_image():
     )
     return img
 
-async def get_indoor_cameras_armed_image():
+async def get_indoor_cameras_armed_image() -> drawing.Image:
     logger.info('Fetching indoor cameras armed status for image')
     ha = HomeAssistant(config)
     indoor_cameras_armed = await ha.get_value('alarm_control_panel.blink_indoor')
@@ -79,7 +79,7 @@ async def get_indoor_cameras_armed_image():
                                   titlecase(indoor_cameras_armed['state'].replace("_", " ")))
     return img
 
-async def get_outdoor_cameras_armed_image():
+async def get_outdoor_cameras_armed_image() -> drawing.Image:
     logger.info('Fetching outdoor cameras armed status for image')
     ha = HomeAssistant(config)
     outdoor_cameras_armed = await ha.get_value('alarm_control_panel.blink_outdoor')
@@ -87,7 +87,7 @@ async def get_outdoor_cameras_armed_image():
                                   titlecase(outdoor_cameras_armed['state'].replace("_", " ")))
     return img
 
-async def get_weather_image():
+async def get_weather_image() -> drawing.Image:
     logger.info('Fetching weather data for image')
     weather = Weather(config)
     # Fetch all weather data in parallel
@@ -109,7 +109,7 @@ async def get_weather_image():
     )
     return img
 
-async def get_statusboard_image():
+async def get_statusboard_image() -> drawing.Image:
     # Get the individual images in parallel
     weather_img, battery_img, range_img, indoor_cameras_armed_img, outdoor_cameras_armed_img, ups_img = await asyncio.gather(
         get_weather_image(),
@@ -146,6 +146,6 @@ async def get_statusboard_image():
     )
     return combined_img
 
-async def get_test_image():
+async def get_test_image() -> drawing.Image:
     """Get a test image with all icons and battery gauge variants."""
     return await asyncio.to_thread(drawing.create_test_image)

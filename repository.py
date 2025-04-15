@@ -1,7 +1,6 @@
 import redis
 import json
 from reminder import Reminder
-from dataclasses import asdict
 from datetime import datetime
 import logging
 
@@ -45,7 +44,7 @@ class Repository:
         logging.warning(f"Reminder with key {reminder_key} not found")
         return None
 
-    def get_all_reminders(self):
+    def get_all_reminders(self) -> list[Reminder]:
         """Fetch all reminders from Redis and return them as a list of Reminder objects."""
         logging.info("Fetching all reminders")
         keys = self.client.keys('reminder:*')

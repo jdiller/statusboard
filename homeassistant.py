@@ -3,13 +3,13 @@ import asyncio
 import logging
 
 class HomeAssistant:
-    def __init__(self, config):
+    def __init__(self, config: dict):
         self.config = config
         self.ha_url = config['home_assistant']['url']
         self.ha_token = config['home_assistant']['token']
         self.headers = {'Authorization': f'Bearer {self.ha_token}'}
 
-    async def get_value(self, entity_id):
+    async def get_value(self, entity_id: str) -> dict:
         """Asynchronously fetch a value from Home Assistant."""
         try:
             async with aiohttp.ClientSession() as session:
