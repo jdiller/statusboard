@@ -117,6 +117,36 @@ async def get_outdoor_cameras_armed_image() -> Image.Image:
     img = await asyncio.to_thread(create_label)
     return img
 
+async def get_main_thermostat_image() -> Image.Image:
+    logger.info('Fetching main thermostat status for image')
+    ha = HomeAssistant(config)
+    main_thermostat_temperature = await ha.get_value('sensor.picton_temperature')
+    main_thermostat_humidity = await ha.get_value('sensor.picton_humidity')
+    def create_label():
+        label_value = LabelValue()
+        label_value.label = 'Main Thermostat'
+        value = f'{main_thermostat_temperature["state"]}°C, {main_thermostat_humidity["state"]}%'
+        label_value.value = value
+        return label_value.render()
+
+    img = await asyncio.to_thread(create_label)
+    return img
+
+async def get_big_room_thermostat_image() -> Image.Image:
+    logger.info('Fetching main thermostat status for image')
+    ha = HomeAssistant(config)
+    thermostat_temperature = await ha.get_value('sensor.living_room_temperature')
+    thermostat_humidity = await ha.get_value('sensor.living_room_humidity')
+    def create_label():
+        label_value = LabelValue()
+        label_value.label = 'Learning Thermostat'
+        value = f'{thermostat_temperature["state"]}°C, {thermostat_humidity["state"]}%'
+        label_value.value = value
+        return label_value.render()
+
+    img = await asyncio.to_thread(create_label)
+    return img
+
 async def get_weather_image() -> Image.Image:
     logger.info('Fetching weather data for image')
     weather = Weather(config)
@@ -144,13 +174,15 @@ async def get_weather_image() -> Image.Image:
 
 async def get_statusboard_image() -> Image.Image:
     # Get the individual images in parallel
-    weather_img, battery_img, range_img, indoor_cameras_armed_img, outdoor_cameras_armed_img, ups_img = await asyncio.gather(
+    weather_img, battery_img, range_img, indoor_cameras_armed_img, outdoor_cameras_armed_img, ups_img, main_thermostat_img, big_room_thermostat_img = await asyncio.gather(
         get_weather_image(),
         get_charging_meter_image(),
         get_range_image(),
         get_indoor_cameras_armed_image(),
         get_outdoor_cameras_armed_image(),
-        get_ups_meter_image()
+        get_ups_meter_image(),
+        get_main_thermostat_image(),
+        get_big_room_thermostat_image()
     )
 
     # Get reminders and create reminders image
@@ -180,6 +212,8 @@ async def get_statusboard_image() -> Image.Image:
         indoor_cameras_armed_img,
         outdoor_cameras_armed_img,
         ups_img,
+        main_thermostat_img,
+        big_room_thermostat_img,
         reminders_img
     )
     return combined_img

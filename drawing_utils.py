@@ -97,6 +97,7 @@ def image_to_packed_bytes(image: Image.Image) -> bytearray:
 
 def create_statusboard_image(weather_img: Image.Image, battery_img: Image.Image, range_img: Image.Image, ups_img: Image.Image,
                              indoor_cameras_armed_img: Image.Image, outdoor_cameras_armed_img: Image.Image,
+                             main_thermostat_img: Image.Image, big_room_thermostat_img: Image.Image,
                              reminders_img: Image.Image, width: int = 800, height: int = 480) -> Image.Image:
     """Combine weather, battery, and reminders images into a single statusboard image."""
     logging.info("Creating statusboard image")
@@ -124,6 +125,10 @@ def create_statusboard_image(weather_img: Image.Image, battery_img: Image.Image,
     battery_section.paste(indoor_cameras_armed_img, (0, top_offset))
     top_offset += indoor_cameras_armed_img.height + 2
     battery_section.paste(outdoor_cameras_armed_img, (0, top_offset))
+    top_offset += outdoor_cameras_armed_img.height + 2
+    battery_section.paste(main_thermostat_img, (0, top_offset))
+    top_offset += main_thermostat_img.height + 2
+    battery_section.paste(big_room_thermostat_img, (0, top_offset))
 
     #Add a last-updated timestamp to the battery section
     last_updated_font = fonts.regular(12)
