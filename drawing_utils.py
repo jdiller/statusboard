@@ -270,7 +270,7 @@ def create_test_image(width: int = 800, height: int = 480) -> Image.Image:
             icon = icon_panel.get_weather_icon()
 
             # Draw directly with MaterialSymbols font
-            icon_font = fonts.material_symbols(icon_size - 10)
+            icon_font = fonts.symbols(icon_size - 10)
 
             # Create a small image for the icon
             icon_img = Image.new('1', (icon_size, icon_size), 1)

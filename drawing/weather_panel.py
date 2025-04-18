@@ -139,7 +139,7 @@ class WeatherPanel:
         try:
             icon = self.get_weather_icon()
             # Load icon font
-            icon_font = fonts.material_symbols(84)
+            icon_font = fonts.symbols(84)
 
             # Verify icon can be drawn
             text_bbox = self.draw.textbbox((0, 0), icon, font=icon_font)
