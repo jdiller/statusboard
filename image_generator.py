@@ -8,6 +8,7 @@ from datetime import datetime
 from titlecase import titlecase
 import asyncio
 from PIL import Image
+from drawing import LabelValue, ChargingMeter
 
 config = get_config()
 logger = configure_logging(config)
@@ -22,8 +23,17 @@ async def get_ups_meter_image() -> Image.Image:
         logger.error('Error fetching UPS status')
         img = await asyncio.to_thread(drawing_utils.create_error_image, ups_status.get('error', 'Unknown error'))
     else:
-        img = await asyncio.to_thread(drawing_utils.create_charging_meter_image, int(ups_status['state']), 100,
-                                      False, True, label_text="UPS Battery: ")
+        # Create ChargingMeter
+        def create_meter():
+            meter = ChargingMeter()
+            meter.current_percentage = int(ups_status['state'])
+            meter.target_percentage = 100
+            meter.charging = False
+            meter.plugged_in = True
+            meter.label_text = "UPS Battery: "
+            return meter.render()
+
+        img = await asyncio.to_thread(create_meter)
     return img
 
 async def get_charging_meter_image() -> Image.Image:
@@ -48,15 +58,17 @@ async def get_charging_meter_image() -> Image.Image:
             car_state_of_charge.get('error', 'Unknown error')
         )
     else:
-        # Run image creation in a thread
-        img = await asyncio.to_thread(
-            drawing_utils.create_charging_meter_image,
-            int(car_state_of_charge['state']),
-            int(car_charging_target['state']),
-            car_charging['state'] == 'on',
-            car_plugged_in['state'] == 'on',
-            label_text="iX Battery: "
-        )
+        # Create ChargingMeter directly
+        def create_meter():
+            meter = ChargingMeter()
+            meter.current_percentage = int(car_state_of_charge['state'])
+            meter.target_percentage = int(car_charging_target['state'])
+            meter.charging = car_charging['state'] == 'on'
+            meter.plugged_in = car_plugged_in['state'] == 'on'
+            meter.label_text = "iX Battery: "
+            return meter.render()
+
+        img = await asyncio.to_thread(create_meter)
     return img
 
 async def get_range_image() -> Image.Image:
@@ -64,28 +76,45 @@ async def get_range_image() -> Image.Image:
     ha = HomeAssistant(config)
     car_range = await ha.get_value('sensor.ix_xdrive50_remaining_range_total')
     logger.info(f'Car range: {car_range}')
-    # Run image creation in a thread
-    img = await asyncio.to_thread(
-        drawing_utils.create_label_value_image,
-        'Range',
-        f'{car_range["state"]} km'
-    )
+
+    # Create LabelValue directly
+    def create_label():
+        label_value = LabelValue()
+        label_value.label = 'Range'
+        label_value.value = f'{car_range["state"]} km'
+        return label_value.render()
+
+    img = await asyncio.to_thread(create_label)
     return img
 
 async def get_indoor_cameras_armed_image() -> Image.Image:
     logger.info('Fetching indoor cameras armed status for image')
     ha = HomeAssistant(config)
     indoor_cameras_armed = await ha.get_value('alarm_control_panel.blink_indoor')
-    img = await asyncio.to_thread(drawing_utils.create_label_value_image, 'Indoor',
-                                  titlecase(indoor_cameras_armed['state'].replace("_", " ")))
+
+    # Create LabelValue directly
+    def create_label():
+        label_value = LabelValue()
+        label_value.label = 'Indoor'
+        label_value.value = titlecase(indoor_cameras_armed['state'].replace("_", " "))
+        return label_value.render()
+
+    img = await asyncio.to_thread(create_label)
     return img
 
 async def get_outdoor_cameras_armed_image() -> Image.Image:
     logger.info('Fetching outdoor cameras armed status for image')
     ha = HomeAssistant(config)
     outdoor_cameras_armed = await ha.get_value('alarm_control_panel.blink_outdoor')
-    img = await asyncio.to_thread(drawing_utils.create_label_value_image, 'Outdoor',
-                                  titlecase(outdoor_cameras_armed['state'].replace("_", " ")))
+
+    # Create LabelValue directly
+    def create_label():
+        label_value = LabelValue()
+        label_value.label = 'Outdoor'
+        label_value.value = titlecase(outdoor_cameras_armed['state'].replace("_", " "))
+        return label_value.render()
+
+    img = await asyncio.to_thread(create_label)
     return img
 
 async def get_weather_image() -> Image.Image:

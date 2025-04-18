@@ -40,25 +40,6 @@ def create_reminders_image(reminders: list[Reminder], width: int = 800, height: 
             break
     return image
 
-def create_label_value_image(label: str, value: str, width: int = 390, height: int = 25) -> Image.Image:
-    """Legacy wrapper function for compatibility"""
-    label_value = LabelValue(width, height)
-    label_value.label = label
-    label_value.value = value
-    return label_value.render()
-
-def create_charging_meter_image(current_percentage: int, target_percentage: int,
-                              charging: bool, plugged_in: bool,
-                              label_text: str = "", width: int = 390, height: int = 25) -> Image.Image:
-    """Legacy wrapper function for compatibility"""
-    meter = ChargingMeter(width, height)
-    meter.current_percentage = current_percentage
-    meter.target_percentage = target_percentage
-    meter.charging = charging
-    meter.plugged_in = plugged_in
-    meter.label_text = label_text
-    return meter.render()
-
 def draw_diagonal_pattern(draw: ImageDraw, pattern_left: int, pattern_right: int,
                           ref_left: int, bar_top: int , bar_height: int, stripe_spacing: int=4,
                           fill: int =0, width: int =1):
