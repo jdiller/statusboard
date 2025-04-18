@@ -4,7 +4,7 @@ import logging
 from datetime import datetime
 from tzlocal import get_localzone
 from reminder import Reminder
-from drawing import LabelValue, ChargingMeter, RemindersPanel  # Import from our drawing package
+from drawing import LabelValue, ChargingMeter, RemindersPanel, WeatherPanel  # Import from our drawing package
 
 def create_error_image(message: str, width: int = 390, height: int = 240) -> Image.Image:
     logging.info(f'Creating error image with message: {message}')
@@ -93,96 +93,6 @@ def image_to_packed_bytes(image: Image.Image) -> bytearray:
             packed_bytes.append(byte)
 
     return packed_bytes
-
-def get_weather_icon(condition_id: int) -> str:
-    logging.info(f'Getting weather icon for condition ID: {condition_id}')
-    try:
-        match(condition_id):
-            case x if x in range(200, 233): #thunderstorm
-                return chr(0xebdb)
-            case x if x in range(300, 322): #drizzle
-                return chr(0xf61e)
-            case x if x in range(500, 531): #rain
-                return chr(0xf176)
-            case x if x in range(600, 622): #snow
-                return chr(0xe80f)
-            case x if x in range(700, 781): #mist
-                return chr(0xe818)
-            case 800: #clear
-                return chr(0xe518)
-            case 801 | 802: #partly cloudy
-                return chr(0xe42d)
-            case 803 | 804: #cloudy
-                return chr(0xe42d)
-            case _:  # Default case
-                logging.warning(f"Unknown condition ID: {condition_id}")
-                return chr(0xe81a)  # Default to "clear" icon
-    except Exception as e:
-        logging.error(f"Error getting weather icon: {e}")
-        return "?"  # Fallback to a simple character
-
-def create_weather_image(temperature: float, humidity: float,
-                         conditions_id: int, conditions_text: str,
-                         wind_speed: float, width: int = 300,
-                         height: int = 200) -> Image.Image:
-    logging.info(f'Creating weather image with temperature: {temperature}, humidity: {humidity}, conditions: {conditions_text}, wind speed: {wind_speed}')
-    padding = 17
-    image = Image.new('1', (width, height), 1)
-    draw = ImageDraw.Draw(image)
-
-    # Draw the temperature
-    temp_font = ImageFont.truetype("LiberationSans-Bold", 60)
-    temp_text = f'{int(temperature)}°C'
-    temp_bbox = draw.textbbox((0, 0), temp_text, font=temp_font)
-    temp_width = temp_bbox[2] - temp_bbox[0]
-    temp_x = width - temp_width - 10
-    draw.text((temp_x, 10), temp_text, font=temp_font, fill=0)
-
-    # Draw the humidity
-    hum_font = ImageFont.truetype("LiberationSans-Bold", 20)
-    hum_text = f'Humidity: {humidity}%'
-    hum_bbox = draw.textbbox((0, 0), hum_text, font=hum_font)
-    hum_width = hum_bbox[2] - hum_bbox[0]
-    hum_x = width - hum_width - 10
-    draw.text((hum_x, temp_bbox[3] + padding), hum_text, font=hum_font, fill=0)
-
-    # Draw the weather icon
-    try:
-        icon = get_weather_icon(conditions_id)
-        # Load icon font
-        with open("assets/MaterialSymbolsOutlined.ttf", "rb") as f:
-            icon_font = ImageFont.truetype(f, 84)
-
-        # Verify icon can be drawn
-        text_bbox = draw.textbbox((0, 0), icon, font=icon_font)
-        if text_bbox[2] > 0:  # If width > 0, it's probably valid
-            draw.text((10, 10), icon, font=icon_font, fill=0)
-        else:
-            logging.warning(f"Invalid icon for condition {conditions_id}")
-            draw.text((10, 10), "?", font=ImageFont.load_default(), fill=0)
-    except Exception as e:
-        logging.error(f"Error rendering weather icon: {e}")
-        draw.text((10, 10), "!", font=ImageFont.load_default(), fill=0)
-
-    # Draw the conditions
-    cond_font = ImageFont.truetype("LiberationSans-Bold", 16)
-    cond_text = f'{titlecase(conditions_text)}'
-    cond_bbox = draw.textbbox((0, 0), cond_text, font=cond_font)
-    cond_width = cond_bbox[2] - cond_bbox[0]
-    cond_x = width - cond_width - 10
-    draw.text((cond_x, temp_bbox[3] + hum_bbox[3] + padding * 2), cond_text, font=cond_font, fill=0)
-
-    wind_font = ImageFont.truetype("LiberationSans-Bold", 16)
-    wind_text = f'Wind: {wind_speed} km/h'
-    wind_bbox = draw.textbbox((0, 0), wind_text, font=wind_font)
-    wind_width = wind_bbox[2] - wind_bbox[0]
-    wind_x = width - wind_width - 10
-    draw.text((wind_x, temp_bbox[3] + hum_bbox[3] + cond_bbox[3] + padding * 3), wind_text, font=wind_font, fill=0)
-
-    draw.rectangle([(0, height-20), (width, height)], fill=0)
-    title_font = ImageFont.truetype("LiberationSans-Bold", 15)
-    draw.text((10, height-18), 'Weather', font=title_font, fill=1)
-    return image
 
 def create_statusboard_image(weather_img: Image.Image, battery_img: Image.Image, range_img: Image.Image, ups_img: Image.Image,
                              indoor_cameras_armed_img: Image.Image, outdoor_cameras_armed_img: Image.Image,
@@ -281,8 +191,21 @@ def create_test_image(width: int = 800, height: int = 480) -> Image.Image:
     draw.text((padding, padding + 50), "RemindersPanel Class Example:", font=label_font, fill=0)
     image.paste(reminders_demo, (padding, padding + 70))
 
+    # Create a demonstration of WeatherPanel usage
+    weather_panel = WeatherPanel(width=300, height=100)
+    weather_panel.temperature = 22.5
+    weather_panel.humidity = 45
+    weather_panel.conditions_id = 800  # Clear
+    weather_panel.conditions_text = "clear sky"
+    weather_panel.wind_speed = 3.5
+    weather_demo = weather_panel.render()
+
+    # Draw the weather demo to the right of the reminders demo
+    draw.text((padding + 330, padding + 50), "WeatherPanel Class Example:", font=label_font, fill=0)
+    image.paste(weather_demo, (padding + 330, padding + 70))
+
     # Section 1: Weather Icons
-    # Adjust y position to account for the LabelValue and RemindersPanel demos
+    # Adjust y position to account for the demos
     icon_y = padding + 180
 
     # Weather icon condition IDs to test

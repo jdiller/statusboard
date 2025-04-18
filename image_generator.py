@@ -8,7 +8,7 @@ from datetime import datetime
 from titlecase import titlecase
 import asyncio
 from PIL import Image
-from drawing import LabelValue, ChargingMeter, RemindersPanel
+from drawing import LabelValue, ChargingMeter, RemindersPanel, WeatherPanel
 
 config = get_config()
 logger = configure_logging(config)
@@ -128,15 +128,18 @@ async def get_weather_image() -> Image.Image:
         weather.get_wind_speed()
     )
     conditions_id, conditions_text = conditions
-    # Run image creation in a thread
-    img = await asyncio.to_thread(
-        drawing_utils.create_weather_image,
-        temperature,
-        humidity,
-        conditions_id,
-        conditions_text,
-        wind_speed
-    )
+
+    # Create WeatherPanel
+    def create_weather_panel():
+        panel = WeatherPanel()
+        panel.temperature = temperature
+        panel.humidity = humidity
+        panel.conditions_id = conditions_id
+        panel.conditions_text = conditions_text
+        panel.wind_speed = wind_speed
+        return panel.render()
+
+    img = await asyncio.to_thread(create_weather_panel)
     return img
 
 async def get_statusboard_image() -> Image.Image:
