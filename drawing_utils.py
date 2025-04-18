@@ -5,12 +5,13 @@ from datetime import datetime
 from tzlocal import get_localzone
 from reminder import Reminder
 from drawing import LabelValue, ChargingMeter, RemindersPanel, WeatherPanel  # Import from our drawing package
+from drawing import fonts  # Import our new fonts module
 
 def create_error_image(message: str, width: int = 390, height: int = 240) -> Image.Image:
     logging.info(f'Creating error image with message: {message}')
     image = Image.new('1', (width, height), 1)
     draw = ImageDraw.Draw(image)
-    font = ImageFont.truetype("LiberationSans-Regular", 11)
+    font = fonts.regular(11)
     draw.text((0, 0), message, font=font, fill=0)
     return image
 
@@ -109,7 +110,7 @@ def create_statusboard_image(weather_img: Image.Image, battery_img: Image.Image,
     # Create a blank quarter-sized image for the battery section
     battery_section = Image.new('1', (quarter_width, quarter_height), 1)
     #put a title on the battery section
-    title_font = ImageFont.truetype("LiberationSans-Bold", 15)
+    title_font = fonts.bold(15)
     draw = ImageDraw.Draw(battery_section)
     draw.rectangle([(0, 0), (quarter_width, title_font.size + 4)], fill=0)
     draw.text((2, 2), 'Sensors', font=title_font, fill=255)
@@ -125,7 +126,7 @@ def create_statusboard_image(weather_img: Image.Image, battery_img: Image.Image,
     battery_section.paste(outdoor_cameras_armed_img, (0, top_offset))
 
     #Add a last-updated timestamp to the battery section
-    last_updated_font = ImageFont.truetype("LiberationSans-Regular", 12)
+    last_updated_font = fonts.regular(12)
     last_updated_text = f'Last updated: {datetime.now(get_localzone()).strftime("%b %d, %I:%M %p")}'
     last_updated_bbox = draw.textbbox((0, 0), last_updated_text, font=last_updated_font)
     last_updated_width = last_updated_bbox[2] - last_updated_bbox[0]
@@ -167,8 +168,8 @@ def create_test_image(width: int = 800, height: int = 480) -> Image.Image:
     section_spacing = 15
 
     # Load font for labels
-    label_font = ImageFont.truetype("LiberationSans-Regular", 12)
-    section_font = ImageFont.truetype("LiberationSans-Bold", 14)
+    label_font = fonts.regular(12)
+    section_font = fonts.bold(14)
 
     # ========== SECTION 1: Class Demos ==========
     current_y = padding
@@ -269,8 +270,7 @@ def create_test_image(width: int = 800, height: int = 480) -> Image.Image:
             icon = icon_panel.get_weather_icon()
 
             # Draw directly with MaterialSymbols font
-            with open("assets/MaterialSymbolsOutlined.ttf", "rb") as f:
-                icon_font = ImageFont.truetype(f, icon_size - 10)
+            icon_font = fonts.material_symbols(icon_size - 10)
 
             # Create a small image for the icon
             icon_img = Image.new('1', (icon_size, icon_size), 1)

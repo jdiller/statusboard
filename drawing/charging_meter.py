@@ -1,5 +1,6 @@
 from PIL import Image, ImageDraw, ImageFont
 import logging
+from drawing import fonts
 
 class ChargingMeter:
     """Class for creating charging meter images with various styles and configurations"""
@@ -18,7 +19,7 @@ class ChargingMeter:
         self.meter_top = self.padding
         self.meter_left = self.padding
         self.meter_width = width - self.padding * 2 - self.right_padding
-        self.charge_font = ImageFont.truetype("LiberationMono-Regular", 16)
+        self.charge_font = fonts.regular(16)
 
         # Meter state properties (private)
         self._current_percentage = 0
@@ -117,7 +118,7 @@ class ChargingMeter:
         if self.label_text:
             logging.info(f'Adding label: {self.label_text}')
             # Add a label
-            label_font = ImageFont.truetype("LiberationSans-Bold", 18)
+            label_font = fonts.bold(18)
             label_bbox = self.draw.textbbox((self.padding, self.padding), self.label_text, font=label_font)
             label_width = max(label_bbox[2] - label_bbox[0], 125)
 
@@ -190,8 +191,7 @@ class ChargingMeter:
 
         # Add charging/plugged in indicator
         if self.charging or self.plugged_in:
-            with open("assets/MaterialSymbolsOutlined.ttf", "rb") as f:
-                charging_font = ImageFont.truetype(f, 16)
+            charging_font = fonts.symbols(16)
             charging_glyph = chr(0xec1c) if self.charging else chr(0xe63c)
             self.draw.text(
                 (self.width - self.padding - self.right_padding, bar_top - self.padding),

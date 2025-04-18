@@ -1,6 +1,7 @@
 from PIL import Image, ImageDraw, ImageFont
 import logging
 from titlecase import titlecase
+from drawing import fonts
 
 class WeatherPanel:
     """Class for creating and rendering a weather information panel"""
@@ -13,11 +14,11 @@ class WeatherPanel:
         self.draw = ImageDraw.Draw(self.image)
 
         # Font settings
-        self.temp_font = ImageFont.truetype("LiberationSans-Bold", 60)
-        self.hum_font = ImageFont.truetype("LiberationSans-Bold", 20)
-        self.cond_font = ImageFont.truetype("LiberationSans-Bold", 16)
-        self.wind_font = ImageFont.truetype("LiberationSans-Bold", 16)
-        self.title_font = ImageFont.truetype("LiberationSans-Bold", 15)
+        self.temp_font = fonts.bold(60)
+        self.hum_font = fonts.bold(20)
+        self.cond_font = fonts.bold(16)
+        self.wind_font = fonts.bold(16)
+        self.title_font = fonts.bold(15)
 
         # Content properties
         self._temperature = 0.0
@@ -138,8 +139,7 @@ class WeatherPanel:
         try:
             icon = self.get_weather_icon()
             # Load icon font
-            with open("assets/MaterialSymbolsOutlined.ttf", "rb") as f:
-                icon_font = ImageFont.truetype(f, 84)
+            icon_font = fonts.material_symbols(84)
 
             # Verify icon can be drawn
             text_bbox = self.draw.textbbox((0, 0), icon, font=icon_font)

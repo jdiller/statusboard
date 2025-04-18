@@ -1,5 +1,6 @@
 from PIL import Image, ImageDraw, ImageFont
 import logging
+from drawing import fonts
 
 class LabelValue:
     """Class for creating label-value pair images"""
@@ -10,8 +11,8 @@ class LabelValue:
         self.height = height
         self.image = Image.new('1', (width, height), 1)
         self.draw = ImageDraw.Draw(self.image)
-        self.label_font = ImageFont.truetype("LiberationSans-Bold", 18)
-        self.value_font = ImageFont.truetype("LiberationSans-Regular", 18)
+        self.label_font = fonts.bold(18)
+        self.value_font = fonts.regular(18)
 
         # State properties (private)
         self._label = ""

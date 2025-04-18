@@ -2,6 +2,7 @@ from PIL import Image, ImageDraw, ImageFont
 import logging
 from typing import List
 from reminder import Reminder
+from drawing import fonts
 
 class RemindersPanel:
     """Class for creating and rendering a panel of reminders"""
@@ -16,9 +17,9 @@ class RemindersPanel:
         self.draw = ImageDraw.Draw(self.image)
 
         # Font settings
-        self.title_font = ImageFont.truetype("LiberationSans-Bold", 22)
-        self.font = ImageFont.truetype("LiberationSans-Regular", 18)
-        self.sub_font = ImageFont.truetype("LiberationSans-Regular", 12)
+        self.title_font = fonts.bold(22)
+        self.font = fonts.regular(18)
+        self.sub_font = fonts.regular(12)
 
         # Content
         self._reminders = []
