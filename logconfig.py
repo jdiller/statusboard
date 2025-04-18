@@ -1,7 +1,7 @@
 import logging
 import sys
 
-def configure_logging(config):
+def configure_logging(config: dict):
     root = logging.getLogger()
     log_level = config.get("logging", "log_level")
     if log_level:

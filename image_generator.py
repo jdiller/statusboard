@@ -1,4 +1,4 @@
-import drawing
+import drawing_utils
 from homeassistant import HomeAssistant
 from weather import Weather
 from localconfig import get_config
@@ -7,25 +7,26 @@ from repository import Repository
 from datetime import datetime
 from titlecase import titlecase
 import asyncio
+from PIL import Image
 
 config = get_config()
 logger = configure_logging(config)
 repo = Repository(config)
 
-async def get_ups_meter_image() -> drawing.Image:
+async def get_ups_meter_image() -> Image.Image:
     logger.info('Fetching UPS status for meter image')
     ha = HomeAssistant(config)
     ups_status = await ha.get_value('sensor.cyberpower_battery_charge')
     logger.info(f'UPS status: {ups_status}')
     if 'error' in ups_status:
         logger.error('Error fetching UPS status')
-        img = await asyncio.to_thread(drawing.create_error_image, ups_status.get('error', 'Unknown error'))
+        img = await asyncio.to_thread(drawing_utils.create_error_image, ups_status.get('error', 'Unknown error'))
     else:
-        img = await asyncio.to_thread(drawing.create_charging_meter_image, int(ups_status['state']), 100,
+        img = await asyncio.to_thread(drawing_utils.create_charging_meter_image, int(ups_status['state']), 100,
                                       False, True, label_text="UPS Battery: ")
     return img
 
-async def get_charging_meter_image() -> drawing.Image:
+async def get_charging_meter_image() -> Image.Image:
     logger.info('Fetching car status for charging meter image')
     ha = HomeAssistant(config)
     # Fetch all data in parallel
@@ -43,13 +44,13 @@ async def get_charging_meter_image() -> drawing.Image:
         logger.error('Error fetching car status')
         # Run image creation in a thread
         img = await asyncio.to_thread(
-            drawing.create_error_image,
+            drawing_utils.create_error_image,
             car_state_of_charge.get('error', 'Unknown error')
         )
     else:
         # Run image creation in a thread
         img = await asyncio.to_thread(
-            drawing.create_charging_meter_image,
+            drawing_utils.create_charging_meter_image,
             int(car_state_of_charge['state']),
             int(car_charging_target['state']),
             car_charging['state'] == 'on',
@@ -58,36 +59,36 @@ async def get_charging_meter_image() -> drawing.Image:
         )
     return img
 
-async def get_range_image() -> drawing.Image:
+async def get_range_image() -> Image.Image:
     logger.info('Fetching car status for range image')
     ha = HomeAssistant(config)
     car_range = await ha.get_value('sensor.ix_xdrive50_remaining_range_total')
     logger.info(f'Car range: {car_range}')
     # Run image creation in a thread
     img = await asyncio.to_thread(
-        drawing.create_label_value_image,
+        drawing_utils.create_label_value_image,
         'Range',
         f'{car_range["state"]} km'
     )
     return img
 
-async def get_indoor_cameras_armed_image() -> drawing.Image:
+async def get_indoor_cameras_armed_image() -> Image.Image:
     logger.info('Fetching indoor cameras armed status for image')
     ha = HomeAssistant(config)
     indoor_cameras_armed = await ha.get_value('alarm_control_panel.blink_indoor')
-    img = await asyncio.to_thread(drawing.create_label_value_image, 'Indoor',
+    img = await asyncio.to_thread(drawing_utils.create_label_value_image, 'Indoor',
                                   titlecase(indoor_cameras_armed['state'].replace("_", " ")))
     return img
 
-async def get_outdoor_cameras_armed_image() -> drawing.Image:
+async def get_outdoor_cameras_armed_image() -> Image.Image:
     logger.info('Fetching outdoor cameras armed status for image')
     ha = HomeAssistant(config)
     outdoor_cameras_armed = await ha.get_value('alarm_control_panel.blink_outdoor')
-    img = await asyncio.to_thread(drawing.create_label_value_image, 'Outdoor',
+    img = await asyncio.to_thread(drawing_utils.create_label_value_image, 'Outdoor',
                                   titlecase(outdoor_cameras_armed['state'].replace("_", " ")))
     return img
 
-async def get_weather_image() -> drawing.Image:
+async def get_weather_image() -> Image.Image:
     logger.info('Fetching weather data for image')
     weather = Weather(config)
     # Fetch all weather data in parallel
@@ -100,7 +101,7 @@ async def get_weather_image() -> drawing.Image:
     conditions_id, conditions_text = conditions
     # Run image creation in a thread
     img = await asyncio.to_thread(
-        drawing.create_weather_image,
+        drawing_utils.create_weather_image,
         temperature,
         humidity,
         conditions_id,
@@ -109,7 +110,7 @@ async def get_weather_image() -> drawing.Image:
     )
     return img
 
-async def get_statusboard_image() -> drawing.Image:
+async def get_statusboard_image() -> Image.Image:
     # Get the individual images in parallel
     weather_img, battery_img, range_img, indoor_cameras_armed_img, outdoor_cameras_armed_img, ups_img = await asyncio.gather(
         get_weather_image(),
@@ -131,11 +132,11 @@ async def get_statusboard_image() -> drawing.Image:
     display_reminders = undated_reminders + dated_reminders
 
     # Run image creation in a thread
-    reminders_img = await asyncio.to_thread(drawing.create_reminders_image, display_reminders)
+    reminders_img = await asyncio.to_thread(drawing_utils.create_reminders_image, display_reminders)
 
     # Run image combination in a thread
     combined_img = await asyncio.to_thread(
-        drawing.create_statusboard_image,
+        drawing_utils.create_statusboard_image,
         weather_img,
         battery_img,
         range_img,
@@ -146,6 +147,6 @@ async def get_statusboard_image() -> drawing.Image:
     )
     return combined_img
 
-async def get_test_image() -> drawing.Image:
+async def get_test_image() -> Image.Image:
     """Get a test image with all icons and battery gauge variants."""
-    return await asyncio.to_thread(drawing.create_test_image)
+    return await asyncio.to_thread(drawing_utils.create_test_image)

@@ -1,4 +1,4 @@
-import drawing
+import drawing_utils
 import asyncio
 import image_generator
 from fastapi import FastAPI, HTTPException
@@ -86,7 +86,7 @@ async def statusboard_bytes():
     combined_img = await image_generator.get_statusboard_image()
 
     # Run byte packing in a thread
-    byte_array = await asyncio.to_thread(drawing.image_to_packed_bytes, combined_img)
+    byte_array = await asyncio.to_thread(drawing_utils.image_to_packed_bytes, combined_img)
     byte_io = BytesIO(byte_array)
 
     # Create a response with the byte array

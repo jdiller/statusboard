@@ -4,6 +4,7 @@ import logging
 from datetime import datetime
 from tzlocal import get_localzone
 from reminder import Reminder
+from drawing import LabelValue, ChargingMeter  # Import from our drawing package
 
 def create_error_image(message: str, width: int = 390, height: int = 240) -> Image.Image:
     logging.info(f'Creating error image with message: {message}')
@@ -40,124 +41,23 @@ def create_reminders_image(reminders: list[Reminder], width: int = 800, height: 
     return image
 
 def create_label_value_image(label: str, value: str, width: int = 390, height: int = 25) -> Image.Image:
-    logging.info(f'Creating label-value image: {label}={value}')
-    image = Image.new('1', (width, height), 1)
-    draw = ImageDraw.Draw(image)
-    label_font = ImageFont.truetype("LiberationSans-Bold", 18)
-    value_font = ImageFont.truetype("LiberationSans-Regular", 18)
-
-    draw.text((0, 0), f'{label}: ', font=label_font, fill=0)
-    value_bbox = draw.textbbox((0, 0), value, font=value_font)
-    draw.text((width - value_bbox[2], 0), value, font=value_font, fill=0)
-    return image
+    """Legacy wrapper function for compatibility"""
+    label_value = LabelValue(width, height)
+    return label_value.render(label, value)
 
 def create_charging_meter_image(current_percentage: int, target_percentage: int,
-                               charging: bool, plugged_in: bool,
-                               label_text: str = "", width: int = 390, height: int = 25) -> Image.Image:
-    logging.info(f'Creating charging meter image for {current_percentage}% and {target_percentage}%')
-
-    # Create a new image with white background
-    image = Image.new('1', (width, height), 1)
-    draw = ImageDraw.Draw(image)
-
-    # Define dimensions and positions
-    right_padding = 10
-    padding = 2
-    meter_height = height - padding * 2
-    meter_top = padding
-    meter_left = padding
-    meter_width = width - padding * 2 - right_padding
-    label_width = 0
-
-    if label_text:
-        logging.info(f'Adding label: {label_text}')
-        # Add a label
-        label_font = label_font = ImageFont.truetype("LiberationSans-Bold", 18)
-        label_bbox = draw.textbbox((padding, padding), label_text, font=label_font)
-        label_width = max(label_bbox[2] - label_bbox[0], 125)
-
-        # Calculate vertical center position for the label
-        label_height = label_bbox[3] - label_bbox[1]
-        meter_center_y = meter_top + (meter_height / 2)
-        label_y = meter_center_y - (label_height / 2)
-
-        # Draw the label text vertically centered relative to the meter
-        draw.text((padding, label_y), label_text, font=label_font, fill=0)
-
-        # Adjust meter dimensions to account for label
-        meter_left = label_width + padding
-        meter_width = width - padding * 2 - right_padding - label_width
-
-    # Draw an empty meter
-    draw.rounded_rectangle([meter_left, meter_top, meter_left + meter_width, meter_top + meter_height], 5, outline=0)
-
-    # Calculate positions for current and target percentages
-    current_x = int((current_percentage / 100) * meter_width) + meter_left
-    target_x = int((target_percentage / 100) * meter_width) + meter_left
-
-    # Fill the area beyond the target with a diagonal stripe pattern
-    bar_top = meter_top + padding
-    bar_height = meter_height - padding * 2
-
-    # Pattern for the area beyond the target (the portion that will remain empty)
-    pattern_left = target_x
-    pattern_right = meter_left + meter_width - padding
-
-    # Draw diagonal stripes in the "beyond target" area
-    stripe_spacing = 4  # pixels between stripes
-
-    if target_percentage < 100:
-    # Draw diagonal stripes in the "beyond target" area
-        draw_diagonal_pattern(draw, pattern_left, pattern_right, ref_left=meter_left, bar_top=bar_top, bar_height=bar_height, stripe_spacing=stripe_spacing, fill=0, width=1)
-
-    # Draw the filled bar for current percentage (solid black)
-    draw.rounded_rectangle([meter_left + padding, bar_top, current_x, bar_top + bar_height], 5, fill=0)
-
-    # Add current percentage text inside the bar
-    charge_font = ImageFont.truetype("LiberationMono-Regular", 16)
-    charge_text = f'{current_percentage}%'
-    charge_text_bbox = draw.textbbox((0, 0), charge_text, font=charge_font)
-    charge_text_width = charge_text_bbox[2] - charge_text_bbox[0]
-    charge_text_height = charge_text_bbox[3] - charge_text_bbox[1]
-
-    # Center the text horizontally in the meter
-    text_x = meter_left + (meter_width // 2) - (charge_text_width // 2)
-
-    # Precisely center the text vertically in the bar
-    meter_center_y = bar_top + (bar_height // 2)
-    text_y = meter_center_y - (charge_text_height // 2) - padding
-
-    # Choose text color based on charge level
-    if current_percentage > 30:
-        # White text on black background
-        draw.text((text_x, text_y), charge_text, font=charge_font, fill=255)
-    else:
-        # Black text on white background
-        draw.text((text_x, text_y), charge_text, font=charge_font, fill=0)
-
-    if charging or plugged_in:
-        with open("assets/MaterialSymbolsOutlined.ttf", "rb") as f:
-            charging_font = ImageFont.truetype(f, 16)
-        charging_glyph = chr(0xec1c) if charging else chr(0xe63c)
-        draw.text((width - padding - right_padding, bar_top - padding), charging_glyph, font=charging_font, fill=0)
-    return image
+                              charging: bool, plugged_in: bool,
+                              label_text: str = "", width: int = 390, height: int = 25) -> Image.Image:
+    """Legacy wrapper function for compatibility"""
+    meter = ChargingMeter(width, height)
+    return meter.render(current_percentage, target_percentage, charging, plugged_in, label_text)
 
 def draw_diagonal_pattern(draw: ImageDraw, pattern_left: int, pattern_right: int,
                           ref_left: int, bar_top: int , bar_height: int, stripe_spacing: int=4,
                           fill: int =0, width: int =1):
     """
+    Legacy function kept for backward compatibility.
     Draw a diagonal stripe pattern within the specified boundaries.
-
-    Args:
-        draw: ImageDraw object to draw on
-        pattern_left: Left boundary of the pattern area
-        pattern_right: Right boundary of the pattern area
-        ref_left: Left reference point for calculating diagonal lines
-        bar_top: Top boundary of the pattern area
-        bar_height: Height of the pattern area
-        stripe_spacing: Pixels between diagonal stripes
-        fill: Color to use for the stripes
-        width: Line width for the stripes
     """
     # Calculate the total width needed for diagonal calculation
     total_width = pattern_right - ref_left
@@ -452,6 +352,9 @@ def create_test_image(width: int = 800, height: int = 480) -> Image.Image:
     battery_width = 150
     battery_height = 30
 
+    # Create meter instances for reuse
+    charging_meter = ChargingMeter(width=battery_width, height=battery_height)
+
     # Draw three sections with different target percentages
     target_percentages = [50, 80, 100]
     charge_percentages = [10, 30, 50, 80, 100]
@@ -468,8 +371,8 @@ def create_test_image(width: int = 800, height: int = 480) -> Image.Image:
             gauge_x = padding + j * (battery_width + 10)
             charging = j % 3 == 0
             plugged_in = j % 3 == 1
-            # Create battery gauge
-            gauge = create_charging_meter_image(charge, target, charging, plugged_in, width=battery_width, height=battery_height)
+            # Create battery gauge using the ChargingMeter class
+            gauge = charging_meter.render(charge, target, charging, plugged_in)
 
             # Paste it into the main image
             image.paste(gauge, (gauge_x, section_y))
