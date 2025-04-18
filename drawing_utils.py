@@ -4,7 +4,7 @@ import logging
 from datetime import datetime
 from tzlocal import get_localzone
 from reminder import Reminder
-from drawing import LabelValue, ChargingMeter  # Import from our drawing package
+from drawing import LabelValue, ChargingMeter, RemindersPanel  # Import from our drawing package
 
 def create_error_image(message: str, width: int = 390, height: int = 240) -> Image.Image:
     logging.info(f'Creating error image with message: {message}')
@@ -12,32 +12,6 @@ def create_error_image(message: str, width: int = 390, height: int = 240) -> Ima
     draw = ImageDraw.Draw(image)
     font = ImageFont.truetype("LiberationSans-Regular", 11)
     draw.text((0, 0), message, font=font, fill=0)
-    return image
-
-def create_reminders_image(reminders: list[Reminder], width: int = 800, height: int = 240) -> Image.Image:
-    PADDING = 3
-    logging.info(f'Creating reminders image for {len(reminders)} reminders')
-    image = Image.new('1', (width, height), 1)
-    draw = ImageDraw.Draw(image)
-    title_font = ImageFont.truetype("LiberationSans-Bold", 22)
-    font = ImageFont.truetype("LiberationSans-Regular", 18)
-    sub_font = ImageFont.truetype("LiberationSans-Regular", 12)
-    draw.text((0, 0), 'Reminders', font=title_font, fill=0)
-    offset = title_font.size + PADDING
-
-    for reminder in [x for x in reminders if not x.completed == "Yes"]:
-        logging.info(f'Creating reminder image for {reminder.message}')
-        draw.text((0, offset), f'- {reminder.message}', font=font, fill=0)
-        offset += (font.size + PADDING)
-        if reminder.time:
-            draw.text((20, offset), reminder.time.strftime('%b %d, %I:%M %p'), font=sub_font, fill=0)
-            offset += (sub_font.size + PADDING)
-        if reminder.location:
-            draw.text((20, offset), reminder.location.replace('\n', ' '), font=sub_font, fill=0)
-            offset += (sub_font.size + PADDING)
-        offset += (10 + PADDING)
-        if offset + font.size > height:
-            break
     return image
 
 def draw_diagonal_pattern(draw: ImageDraw, pattern_left: int, pattern_right: int,
@@ -294,9 +268,22 @@ def create_test_image(width: int = 800, height: int = 480) -> Image.Image:
     draw.text((padding, padding), "LabelValue Class Example:", font=label_font, fill=0)
     image.paste(label_demo, (padding, padding + 20))
 
+    # Create a demonstration of RemindersPanel usage
+    sample_reminders = [
+        Reminder(id="1", message="Test reminder", time=datetime.now(), list="default", location="", completed=False),
+        Reminder(id="2", message="Another test", time=None, list="default", location="Home", completed=False)
+    ]
+    reminders_panel = RemindersPanel(width=300, height=100)
+    reminders_panel.reminders = sample_reminders
+    reminders_demo = reminders_panel.render()
+
+    # Draw the reminders demo below the label demo
+    draw.text((padding, padding + 50), "RemindersPanel Class Example:", font=label_font, fill=0)
+    image.paste(reminders_demo, (padding, padding + 70))
+
     # Section 1: Weather Icons
-    # Adjust y position to account for the LabelValue demo
-    icon_y = padding + 50
+    # Adjust y position to account for the LabelValue and RemindersPanel demos
+    icon_y = padding + 180
 
     # Weather icon condition IDs to test
     weather_conditions = [

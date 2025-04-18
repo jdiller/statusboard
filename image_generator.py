@@ -8,7 +8,7 @@ from datetime import datetime
 from titlecase import titlecase
 import asyncio
 from PIL import Image
-from drawing import LabelValue, ChargingMeter
+from drawing import LabelValue, ChargingMeter, RemindersPanel
 
 config = get_config()
 logger = configure_logging(config)
@@ -160,8 +160,13 @@ async def get_statusboard_image() -> Image.Image:
 
     display_reminders = undated_reminders + dated_reminders
 
-    # Run image creation in a thread
-    reminders_img = await asyncio.to_thread(drawing_utils.create_reminders_image, display_reminders)
+    # Create RemindersPanel directly
+    def create_reminders_panel():
+        panel = RemindersPanel()
+        panel.reminders = display_reminders
+        return panel.render()
+
+    reminders_img = await asyncio.to_thread(create_reminders_panel)
 
     # Run image combination in a thread
     combined_img = await asyncio.to_thread(
