@@ -3,7 +3,7 @@ import logging
 from typing import List
 from reminder import Reminder
 from drawing import fonts
-
+from datetime import time
 class RemindersPanel:
     """Class for creating and rendering a panel of reminders"""
 
@@ -53,7 +53,11 @@ class RemindersPanel:
             offset += (self.font.size + self.PADDING)
 
             if reminder.time:
-                self.draw.text((20, offset), reminder.time.strftime('%b %d, %I:%M %p'), font=self.sub_font, fill=0)
+                if reminder.time.time() == time(0,0,0):
+                    fmt = '%b %d'
+                else:
+                    fmt = '%b %d, %I:%M %p'
+                self.draw.text((20, offset), reminder.time.strftime(fmt), font=self.sub_font, fill=0)
                 offset += (self.sub_font.size + self.PADDING)
 
             if reminder.location:
