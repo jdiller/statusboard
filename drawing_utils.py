@@ -155,44 +155,67 @@ def create_statusboard_image(weather_img: Image.Image, battery_img: Image.Image,
     return image
 
 def create_test_image(width: int = 800, height: int = 480) -> Image.Image:
-    """Create a test image with all weather icons and battery gauge variants."""
-    logging.info("Creating test image with all icons and battery gauges")
+    """Create a test image with all class examples and battery gauge variants."""
+    logging.info("Creating test image with class examples and battery gauges")
 
-    # Create a new image with white background
+    # Create a new image with white background (ensure it's exactly 800x480)
     image = Image.new('1', (width, height), 1)
     draw = ImageDraw.Draw(image)
 
     # Define overall padding
     padding = 10
+    section_spacing = 15
 
     # Load font for labels
     label_font = ImageFont.truetype("LiberationSans-Regular", 12)
+    section_font = ImageFont.truetype("LiberationSans-Bold", 14)
+
+    # ========== SECTION 1: Class Demos ==========
+    current_y = padding
+
+    draw.text((padding, current_y), "UI COMPONENT EXAMPLES", font=section_font, fill=0)
+    current_y += 20
 
     # Create a demonstration of LabelValue usage
-    label_value = LabelValue(width=300, height=25)
+    label_value = LabelValue(width=350, height=25)
     label_value.label = "LabelValue Demo"
     label_value.value = "Using Properties"
     label_demo = label_value.render()
 
-    # Draw the demo at the top of the image
-    draw.text((padding, padding), "LabelValue Class Example:", font=label_font, fill=0)
-    image.paste(label_demo, (padding, padding + 20))
+    # Draw the LabelValue demo
+    draw.text((padding, current_y), "LabelValue Class:", font=label_font, fill=0)
+    image.paste(label_demo, (padding, current_y + 15))
+    current_y += 45
+
+    # Create a demonstration of ChargingMeter usage
+    charging_meter = ChargingMeter(width=350, height=30)
+    charging_meter.current_percentage = 75
+    charging_meter.target_percentage = 90
+    charging_meter.charging = True
+    charging_meter.label_text = "ChargingMeter Demo:"
+    meter_demo = charging_meter.render()
+
+    # Draw the ChargingMeter demo
+    draw.text((padding, current_y), "ChargingMeter Class:", font=label_font, fill=0)
+    image.paste(meter_demo, (padding, current_y + 15))
+    current_y += 50
 
     # Create a demonstration of RemindersPanel usage
     sample_reminders = [
         Reminder(id="1", message="Test reminder", time=datetime.now(), list="default", location="", completed=False),
         Reminder(id="2", message="Another test", time=None, list="default", location="Home", completed=False)
     ]
-    reminders_panel = RemindersPanel(width=300, height=100)
+    reminders_panel = RemindersPanel(width=350, height=100)
     reminders_panel.reminders = sample_reminders
     reminders_demo = reminders_panel.render()
 
-    # Draw the reminders demo below the label demo
-    draw.text((padding, padding + 50), "RemindersPanel Class Example:", font=label_font, fill=0)
-    image.paste(reminders_demo, (padding, padding + 70))
+    # Draw the RemindersPanel demo
+    draw.text((padding, current_y), "RemindersPanel Class:", font=label_font, fill=0)
+    image.paste(reminders_demo, (padding, current_y + 15))
+    current_y += 120
 
     # Create a demonstration of WeatherPanel usage
-    weather_panel = WeatherPanel(width=300, height=100)
+    weather_panel = WeatherPanel(width=350, height=130)
     weather_panel.temperature = 22.5
     weather_panel.humidity = 45
     weather_panel.conditions_id = 800  # Clear
@@ -200,13 +223,17 @@ def create_test_image(width: int = 800, height: int = 480) -> Image.Image:
     weather_panel.wind_speed = 3.5
     weather_demo = weather_panel.render()
 
-    # Draw the weather demo to the right of the reminders demo
-    draw.text((padding + 330, padding + 50), "WeatherPanel Class Example:", font=label_font, fill=0)
-    image.paste(weather_demo, (padding + 330, padding + 70))
+    # Draw the WeatherPanel demo
+    draw.text((padding, current_y), "WeatherPanel Class:", font=label_font, fill=0)
+    image.paste(weather_demo, (padding, current_y + 15))
+    current_y += 150
 
-    # Section 1: Weather Icons
-    # Adjust y position to account for the demos
-    icon_y = padding + 180
+    # ========== SECTION 2: Weather Icons ==========
+    # Move weather icons to the right side of the screen
+    icon_section_x = width // 2 + 20
+    icon_section_y = padding + 20
+
+    draw.text((icon_section_x, padding), "WEATHER ICON EXAMPLES", font=section_font, fill=0)
 
     # Weather icon condition IDs to test
     weather_conditions = [
@@ -220,85 +247,55 @@ def create_test_image(width: int = 800, height: int = 480) -> Image.Image:
         (803, "Cloudy")         # 803-804 range
     ]
 
-    # Draw weather icons
-    icon_size = 64
+    # Draw weather icons in a grid (4 per row)
+    icon_size = 55
     icon_spacing = 20
-    icon_x = padding
-
-    draw.text((icon_x, icon_y), "Weather Icons:", font=label_font, fill=0)
-    icon_y += 25
+    icons_per_row = 4
 
     try:
-        with open("assets/MaterialSymbolsOutlined.ttf", "rb") as f:
-            icon_font = ImageFont.truetype(f, icon_size)
-
         for i, (condition_id, label) in enumerate(weather_conditions):
-            # Draw icon
-            icon = get_weather_icon(condition_id)
-            draw.text((icon_x, icon_y), icon, font=icon_font, fill=0)
+            # Calculate position in grid
+            row = i // icons_per_row
+            col = i % icons_per_row
+
+            icon_x = icon_section_x + col * (icon_size + icon_spacing)
+            icon_y = icon_section_y + row * (icon_size + 25)
+
+            # Create a small weather panel just for the icon
+            icon_panel = WeatherPanel(width=icon_size, height=icon_size)
+            icon_panel.conditions_id = condition_id
+
+            # Get the icon character
+            icon = icon_panel.get_weather_icon()
+
+            # Draw directly with MaterialSymbols font
+            with open("assets/MaterialSymbolsOutlined.ttf", "rb") as f:
+                icon_font = ImageFont.truetype(f, icon_size - 10)
+
+            # Create a small image for the icon
+            icon_img = Image.new('1', (icon_size, icon_size), 1)
+            icon_draw = ImageDraw.Draw(icon_img)
+
+            # Center the icon in the small image
+            icon_draw.text((icon_size//2-20, icon_size//2-25), icon, font=icon_font, fill=0)
+
+            # Paste icon to main image
+            image.paste(icon_img, (icon_x, icon_y))
 
             # Draw label below
             text_bbox = draw.textbbox((0, 0), label, font=label_font)
             text_width = text_bbox[2] - text_bbox[0]
             text_x = icon_x + (icon_size // 2) - (text_width // 2)
-            draw.text((text_x, icon_y + icon_size + 5), label, font=label_font, fill=0)
+            draw.text((text_x, icon_y + icon_size + 2), label, font=label_font, fill=0)
 
-            # Move to next position
-            icon_x += icon_size + icon_spacing
-
-            # Wrap to next row if needed
-            if icon_x + icon_size > width - padding:
-                icon_x = padding
-                icon_y += icon_size + 35
     except Exception as e:
         logging.error(f"Error rendering weather icons: {e}")
-        draw.text((padding, icon_y), f"Error: {e}", font=label_font, fill=0)
+        draw.text((icon_section_x, icon_section_y), f"Error: {e}", font=label_font, fill=0)
 
-    # Move down to the battery gauge section
-    y_offset = icon_y + icon_size + 40
-
-    # Section 2, 3, 4: Battery gauges with different targets
-    battery_section_height = (height - y_offset - padding * 2) // 3
-    battery_width = 150
-    battery_height = 30
-
-    # Create meter instances for reuse
-    charging_meter = ChargingMeter(width=battery_width, height=battery_height)
-
-    # Draw three sections with different target percentages
-    target_percentages = [50, 80, 100]
-    charge_percentages = [10, 30, 50, 80, 100]
-
-    for i, target in enumerate(target_percentages):
-        section_y = y_offset + i * battery_section_height
-
-        # Draw section label
-        draw.text((padding, section_y), f"Battery Gauges (Target: {target}%):", font=label_font, fill=0)
-        section_y += 20
-
-        # Set the target percentage for this row
-        charging_meter.target_percentage = target
-
-        # Draw battery gauges
-        for j, charge in enumerate(charge_percentages):
-            gauge_x = padding + j * (battery_width + 10)
-
-            # Set all the meter properties using the fluent interface
-            charging_meter.current_percentage = charge
-            charging_meter.charging = j % 3 == 0
-            charging_meter.plugged_in = j % 3 == 1
-
-            # Create battery gauge using the ChargingMeter class
-            gauge = charging_meter.render()
-
-            # Paste it into the main image
-            image.paste(gauge, (gauge_x, section_y))
-
-            # Add charge level label below
-            text = f"{charge}%"
-            text_bbox = draw.textbbox((0, 0), text, font=label_font)
-            text_width = text_bbox[2] - text_bbox[0]
-            text_x = gauge_x + (battery_width // 2) - (text_width // 2)
-            draw.text((text_x, section_y + battery_height + 5), text, font=label_font, fill=0)
+    # Add a note about the dimensions at the bottom
+    note_text = "Test Image (800x480 pixels)"
+    text_bbox = draw.textbbox((0, 0), note_text, font=label_font)
+    text_width = text_bbox[2] - text_bbox[0]
+    draw.text((width - text_width - padding, height - 20), note_text, font=label_font, fill=0)
 
     return image
