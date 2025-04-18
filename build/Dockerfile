@@ -15,6 +15,7 @@ COPY requirements.txt /app/
 RUN apt-get update && apt-get install -y --no-install-recommends \
     fontconfig \
     fonts-liberation \
+    fonts-terminus \
     curl \
     && fc-cache -f -v \
     && apt-get clean \
