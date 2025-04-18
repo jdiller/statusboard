@@ -43,7 +43,9 @@ def create_reminders_image(reminders: list[Reminder], width: int = 800, height: 
 def create_label_value_image(label: str, value: str, width: int = 390, height: int = 25) -> Image.Image:
     """Legacy wrapper function for compatibility"""
     label_value = LabelValue(width, height)
-    return label_value.render(label, value)
+    label_value.label = label
+    label_value.value = value
+    return label_value.render()
 
 def create_charging_meter_image(current_percentage: int, target_percentage: int,
                               charging: bool, plugged_in: bool,
@@ -301,7 +303,20 @@ def create_test_image(width: int = 800, height: int = 480) -> Image.Image:
     # Load font for labels
     label_font = ImageFont.truetype("LiberationSans-Regular", 12)
 
+    # Create a demonstration of LabelValue usage
+    label_value = LabelValue(width=300, height=25)
+    label_value.label = "LabelValue Demo"
+    label_value.value = "Using Properties"
+    label_demo = label_value.render()
+
+    # Draw the demo at the top of the image
+    draw.text((padding, padding), "LabelValue Class Example:", font=label_font, fill=0)
+    image.paste(label_demo, (padding, padding + 20))
+
     # Section 1: Weather Icons
+    # Adjust y position to account for the LabelValue demo
+    icon_y = padding + 50
+
     # Weather icon condition IDs to test
     weather_conditions = [
         (210, "Thunderstorm"),  # 200-232 range
@@ -318,7 +333,6 @@ def create_test_image(width: int = 800, height: int = 480) -> Image.Image:
     icon_size = 64
     icon_spacing = 20
     icon_x = padding
-    icon_y = padding
 
     draw.text((icon_x, icon_y), "Weather Icons:", font=label_font, fill=0)
     icon_y += 25
