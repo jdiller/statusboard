@@ -50,7 +50,12 @@ def create_charging_meter_image(current_percentage: int, target_percentage: int,
                               label_text: str = "", width: int = 390, height: int = 25) -> Image.Image:
     """Legacy wrapper function for compatibility"""
     meter = ChargingMeter(width, height)
-    return meter.render(current_percentage, target_percentage, charging, plugged_in, label_text)
+    meter.current_percentage = current_percentage
+    meter.target_percentage = target_percentage
+    meter.charging = charging
+    meter.plugged_in = plugged_in
+    meter.label_text = label_text
+    return meter.render()
 
 def draw_diagonal_pattern(draw: ImageDraw, pattern_left: int, pattern_right: int,
                           ref_left: int, bar_top: int , bar_height: int, stripe_spacing: int=4,
@@ -365,14 +370,21 @@ def create_test_image(width: int = 800, height: int = 480) -> Image.Image:
         # Draw section label
         draw.text((padding, section_y), f"Battery Gauges (Target: {target}%):", font=label_font, fill=0)
         section_y += 20
-        charging = False
+
+        # Set the target percentage for this row
+        charging_meter.target_percentage = target
+
         # Draw battery gauges
         for j, charge in enumerate(charge_percentages):
             gauge_x = padding + j * (battery_width + 10)
-            charging = j % 3 == 0
-            plugged_in = j % 3 == 1
+
+            # Set all the meter properties using the fluent interface
+            charging_meter.current_percentage = charge
+            charging_meter.charging = j % 3 == 0
+            charging_meter.plugged_in = j % 3 == 1
+
             # Create battery gauge using the ChargingMeter class
-            gauge = charging_meter.render(charge, target, charging, plugged_in)
+            gauge = charging_meter.render()
 
             # Paste it into the main image
             image.paste(gauge, (gauge_x, section_y))

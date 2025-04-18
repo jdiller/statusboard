@@ -5,10 +5,13 @@ class ChargingMeter:
     """Class for creating charging meter images with various styles and configurations"""
 
     def __init__(self, width: int = 390, height: int = 25):
+        # Image dimensions
         self.width = width
         self.height = height
         self.image = Image.new('1', (width, height), 1)
         self.draw = ImageDraw.Draw(self.image)
+
+        # Meter display settings
         self.right_padding = 10
         self.padding = 2
         self.meter_height = height - self.padding * 2
@@ -17,10 +20,91 @@ class ChargingMeter:
         self.meter_width = width - self.padding * 2 - self.right_padding
         self.charge_font = ImageFont.truetype("LiberationMono-Regular", 16)
 
-    def render(self, current_percentage: int, target_percentage: int,
-              charging: bool, plugged_in: bool, label_text: str = "") -> Image.Image:
+        # Meter state properties (private)
+        self._current_percentage = 0
+        self._target_percentage = 100
+        self._charging = False
+        self._plugged_in = False
+        self._label_text = ""
+
+    @property
+    def current_percentage(self) -> int:
+        """Get the current charge percentage"""
+        return self._current_percentage
+
+    @current_percentage.setter
+    def current_percentage(self, percentage: int) -> 'ChargingMeter':
+        """Set the current charge percentage"""
+        if percentage < 0 or percentage > 100:
+            raise ValueError("Current percentage must be between 0 and 100")
+        self._current_percentage = percentage
+        return self
+
+    @property
+    def target_percentage(self) -> int:
+        """Get the target charge percentage"""
+        return self._target_percentage
+
+    @target_percentage.setter
+    def target_percentage(self, percentage: int) -> 'ChargingMeter':
+        """Set the target charge percentage"""
+        if percentage < 0 or percentage > 100:
+            raise ValueError("Target percentage must be between 0 and 100")
+        self._target_percentage = percentage
+        return self
+
+    @property
+    def charging(self) -> bool:
+        """Get the charging state"""
+        return self._charging
+
+    @charging.setter
+    def charging(self, state: bool) -> 'ChargingMeter':
+        """Set the charging state"""
+        self._charging = state
+        return self
+
+    @property
+    def plugged_in(self) -> bool:
+        """Get the plugged in state"""
+        return self._plugged_in
+
+    @plugged_in.setter
+    def plugged_in(self, state: bool) -> 'ChargingMeter':
+        """Set the plugged in state"""
+        self._plugged_in = state
+        return self
+
+    @property
+    def label_text(self) -> str:
+        """Get the label text"""
+        return self._label_text
+
+    @label_text.setter
+    def label_text(self, text: str) -> 'ChargingMeter':
+        """Set the label text"""
+        self._label_text = text
+        return self
+
+    def update(self, current_percentage: int = None, target_percentage: int = None,
+               charging: bool = None, plugged_in: bool = None,
+               label_text: str = None) -> 'ChargingMeter':
+        """Update multiple properties at once"""
+        if current_percentage is not None:
+            self.current_percentage = current_percentage
+        if target_percentage is not None:
+            self.target_percentage = target_percentage
+        if charging is not None:
+            self.charging = charging
+        if plugged_in is not None:
+            self.plugged_in = plugged_in
+        if label_text is not None:
+            self.label_text = label_text
+        return self
+
+    def render(self) -> Image.Image:
         """Render the charging meter and return the image"""
-        logging.info(f'Creating charging meter image for {current_percentage}% and {target_percentage}%')
+        logging.info(f'Creating charging meter image for {self.current_percentage}% and {self.target_percentage}%')
 
         # Clear the image (in case it's being reused)
         self.draw.rectangle([0, 0, self.width, self.height], fill=1)
@@ -30,11 +114,11 @@ class ChargingMeter:
         self.meter_left = self.padding
         self.meter_width = self.width - self.padding * 2 - self.right_padding
 
-        if label_text:
-            logging.info(f'Adding label: {label_text}')
+        if self.label_text:
+            logging.info(f'Adding label: {self.label_text}')
             # Add a label
             label_font = ImageFont.truetype("LiberationSans-Bold", 18)
-            label_bbox = self.draw.textbbox((self.padding, self.padding), label_text, font=label_font)
+            label_bbox = self.draw.textbbox((self.padding, self.padding), self.label_text, font=label_font)
             label_width = max(label_bbox[2] - label_bbox[0], 125)
 
             # Calculate vertical center position for the label
@@ -43,7 +127,7 @@ class ChargingMeter:
             label_y = meter_center_y - (label_height / 2)
 
             # Draw the label text vertically centered relative to the meter
-            self.draw.text((self.padding, label_y), label_text, font=label_font, fill=0)
+            self.draw.text((0, label_y), self.label_text, font=label_font, fill=0)
 
             # Adjust meter dimensions to account for label
             self.meter_left = label_width + self.padding
@@ -57,8 +141,8 @@ class ChargingMeter:
         )
 
         # Calculate positions for current and target percentages
-        current_x = int((current_percentage / 100) * self.meter_width) + self.meter_left
-        target_x = int((target_percentage / 100) * self.meter_width) + self.meter_left
+        current_x = int((self.current_percentage / 100) * self.meter_width) + self.meter_left
+        target_x = int((self.target_percentage / 100) * self.meter_width) + self.meter_left
 
         # Fill the area beyond the target with a diagonal stripe pattern
         bar_top = self.meter_top + self.padding
@@ -69,7 +153,7 @@ class ChargingMeter:
         pattern_right = self.meter_left + self.meter_width - self.padding
 
         # Draw diagonal stripes in the "beyond target" area if target is less than 100%
-        if target_percentage < 100:
+        if self.target_percentage < 100:
             self._draw_diagonal_pattern(
                 pattern_left, pattern_right,
                 ref_left=self.meter_left,
@@ -84,7 +168,7 @@ class ChargingMeter:
         )
 
         # Add current percentage text inside the bar
-        charge_text = f'{current_percentage}%'
+        charge_text = f'{self.current_percentage}%'
         charge_text_bbox = self.draw.textbbox((0, 0), charge_text, font=self.charge_font)
         charge_text_width = charge_text_bbox[2] - charge_text_bbox[0]
         charge_text_height = charge_text_bbox[3] - charge_text_bbox[1]
@@ -97,7 +181,7 @@ class ChargingMeter:
         text_y = meter_center_y - (charge_text_height // 2) - self.padding
 
         # Choose text color based on charge level
-        if current_percentage > 30:
+        if self.current_percentage > 30:
             # White text on black background
             self.draw.text((text_x, text_y), charge_text, font=self.charge_font, fill=255)
         else:
@@ -105,10 +189,10 @@ class ChargingMeter:
             self.draw.text((text_x, text_y), charge_text, font=self.charge_font, fill=0)
 
         # Add charging/plugged in indicator
-        if charging or plugged_in:
+        if self.charging or self.plugged_in:
             with open("assets/MaterialSymbolsOutlined.ttf", "rb") as f:
                 charging_font = ImageFont.truetype(f, 16)
-            charging_glyph = chr(0xec1c) if charging else chr(0xe63c)
+            charging_glyph = chr(0xec1c) if self.charging else chr(0xe63c)
             self.draw.text(
                 (self.width - self.padding - self.right_padding, bar_top - self.padding),
                 charging_glyph, font=charging_font, fill=0
