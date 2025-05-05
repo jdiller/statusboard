@@ -98,7 +98,7 @@ def image_to_packed_bytes(image: Image.Image) -> bytearray:
 def create_statusboard_image(weather_img: Image.Image, battery_img: Image.Image, range_img: Image.Image, ups_img: Image.Image,
                              indoor_cameras_armed_img: Image.Image, outdoor_cameras_armed_img: Image.Image,
                              main_thermostat_img: Image.Image, big_room_thermostat_img: Image.Image,
-                             reminders_img: Image.Image, width: int = 800, height: int = 480) -> Image.Image:
+                             reminders_img: Image.Image, flights_img: Image.Image, width: int = 800, height: int = 480) -> Image.Image:
     """Combine weather, battery, and reminders images into a single statusboard image."""
     logging.info("Creating statusboard image")
     # Create a new image with white background
@@ -139,13 +139,14 @@ def create_statusboard_image(weather_img: Image.Image, battery_img: Image.Image,
     draw.text((last_updated_x, battery_section.height - last_updated_font.size - 2), last_updated_text, font=last_updated_font, fill=0)
 
     # Resize the weather image to fit its designated area
-    weather_img = weather_img.resize((quarter_width, quarter_height))
-    reminders_img = reminders_img.resize((width, quarter_height))
+    #weather_img = weather_img.resize((quarter_width, quarter_height))
+    #reminders_img = reminders_img.resize((width, quarter_height))
 
     # Paste the images into their respective positions
     image.paste(battery_section, (0, 0))  # Top-left quarter
     image.paste(weather_img, (quarter_width, 0))  # Top-right quarter
-    image.paste(reminders_img, (0, quarter_height))  # Bottom half
+    image.paste(reminders_img, (0, quarter_height))  # Bottom left quarter
+    image.paste(flights_img, (quarter_width, quarter_height))  # Bottom right quarter
 
 
     # Draw dividing lines

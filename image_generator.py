@@ -8,7 +8,8 @@ from datetime import datetime
 from titlecase import titlecase
 import asyncio
 from PIL import Image
-from drawing import LabelValue, ChargingMeter, RemindersPanel, WeatherPanel
+from drawing import LabelValue, ChargingMeter, RemindersPanel, WeatherPanel, PlanesPanel
+from flights import Flights
 
 config = get_config()
 logger = configure_logging(config)
@@ -172,9 +173,22 @@ async def get_weather_image() -> Image.Image:
     img = await asyncio.to_thread(create_weather_panel)
     return img
 
+async def get_flights_image() -> Image.Image:
+    logger.info('Fetching flights for image')
+    flights = Flights(config)
+    flights_objects = await flights.get_flights_as_objects()
+
+    def create_planes_panel():
+        panel = PlanesPanel()
+        panel.flights = flights_objects
+        return panel.render()
+
+    flights_img = await asyncio.to_thread(create_planes_panel)
+    return flights_img
+
 async def get_statusboard_image() -> Image.Image:
     # Get the individual images in parallel
-    weather_img, battery_img, range_img, indoor_cameras_armed_img, outdoor_cameras_armed_img, ups_img, main_thermostat_img, big_room_thermostat_img = await asyncio.gather(
+    weather_img, battery_img, range_img, indoor_cameras_armed_img, outdoor_cameras_armed_img, ups_img, main_thermostat_img, big_room_thermostat_img, flights_img = await asyncio.gather(
         get_weather_image(),
         get_charging_meter_image(),
         get_range_image(),
@@ -182,7 +196,8 @@ async def get_statusboard_image() -> Image.Image:
         get_outdoor_cameras_armed_image(),
         get_ups_meter_image(),
         get_main_thermostat_image(),
-        get_big_room_thermostat_image()
+        get_big_room_thermostat_image(),
+        get_flights_image()
     )
 
     # Get reminders and create reminders image
@@ -203,6 +218,7 @@ async def get_statusboard_image() -> Image.Image:
 
     reminders_img = await asyncio.to_thread(create_reminders_panel)
 
+
     # Run image combination in a thread
     combined_img = await asyncio.to_thread(
         drawing_utils.create_statusboard_image,
@@ -214,7 +230,8 @@ async def get_statusboard_image() -> Image.Image:
         ups_img,
         main_thermostat_img,
         big_room_thermostat_img,
-        reminders_img
+        reminders_img,
+        flights_img
     )
     return combined_img
 

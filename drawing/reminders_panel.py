@@ -7,9 +7,9 @@ from datetime import time
 class RemindersPanel:
     """Class for creating and rendering a panel of reminders"""
 
-    PADDING = 3
+    PADDING = 2
 
-    def __init__(self, width: int = 800, height: int = 240):
+    def __init__(self, width: int = 400, height: int = 240):
         # Image dimensions
         self.width = width
         self.height = height
@@ -17,7 +17,7 @@ class RemindersPanel:
         self.draw = ImageDraw.Draw(self.image)
 
         # Font settings
-        self.title_font = fonts.bold(22)
+        self.title_font = fonts.bold(20)
         self.font = fonts.regular(18)
         self.sub_font = fonts.regular(12)
 
