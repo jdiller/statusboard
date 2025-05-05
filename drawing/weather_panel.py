@@ -6,7 +6,7 @@ from drawing import fonts
 class WeatherPanel:
     """Class for creating and rendering a weather information panel"""
 
-    def __init__(self, width: int = 300, height: int = 200):
+    def __init__(self, width: int = 400, height: int = 240):
         # Image dimensions
         self.width = width
         self.height = height
