@@ -19,9 +19,12 @@ class WeatherPanel:
         self.cond_font = fonts.bold(16)
         self.wind_font = fonts.bold(16)
         self.title_font = fonts.bold(15)
+        self.hi_lo_font = fonts.regular(16)
 
         # Content properties
         self._temperature = 0.0
+        self._high_temp = 0.0
+        self._low_temp = 0.0
         self._humidity = 0.0
         self._conditions_id = 800  # Default to "clear"
         self._conditions_text = "Clear"
@@ -39,6 +42,28 @@ class WeatherPanel:
     def temperature(self, value: float) -> 'WeatherPanel':
         """Set the temperature value"""
         self._temperature = value
+        return self
+
+    @property
+    def high_temp(self) -> float:
+        """Get the high temperature value"""
+        return self._high_temp
+
+    @high_temp.setter
+    def high_temp(self, value: float) -> 'WeatherPanel':
+        """Set the high temperature value"""
+        self._high_temp = value
+        return self
+
+    @property
+    def low_temp(self) -> float:
+        """Get the low temperature value"""
+        return self._low_temp
+
+    @low_temp.setter
+    def low_temp(self, value: float) -> 'WeatherPanel':
+        """Set the low temperature value"""
+        self._low_temp = value
         return self
 
     @property
@@ -116,7 +141,8 @@ class WeatherPanel:
     def render(self) -> Image.Image:
         """Render the weather panel and return the image"""
         logging.info(f'Creating weather image with temperature: {self.temperature}, humidity: {self.humidity}, '
-                     f'conditions: {self.conditions_text}, wind speed: {self.wind_speed}')
+                     f'conditions: {self.conditions_text}, wind speed: {self.wind_speed}, '
+                     f'high temp: {self.high_temp}, low temp: {self.low_temp}')
 
         # Clear the image (in case it's being reused)
         self.draw.rectangle([0, 0, self.width, self.height], fill=1)
@@ -136,6 +162,8 @@ class WeatherPanel:
         self.draw.text((hum_x, temp_bbox[3] + self.padding), hum_text, font=self.hum_font, fill=0)
 
         # Draw the weather icon
+        icon_x = 10
+        icon_y = 10
         try:
             icon = self.get_weather_icon()
             # Load icon font
@@ -144,13 +172,18 @@ class WeatherPanel:
             # Verify icon can be drawn
             text_bbox = self.draw.textbbox((0, 0), icon, font=icon_font)
             if text_bbox[2] > 0:  # If width > 0, it's probably valid
-                self.draw.text((10, 10), icon, font=icon_font, fill=0)
+                self.draw.text((icon_x, icon_y), icon, font=icon_font, fill=0)
             else:
                 logging.warning(f"Invalid icon for condition {self.conditions_id}")
-                self.draw.text((10, 10), "?", font=ImageFont.load_default(), fill=0)
+                self.draw.text((icon_x, icon_y), "?", font=ImageFont.load_default(), fill=0)
         except Exception as e:
             logging.error(f"Error rendering weather icon: {e}")
-            self.draw.text((10, 10), "!", font=ImageFont.load_default(), fill=0)
+            self.draw.text((icon_x, icon_y), "!", font=ImageFont.load_default(), fill=0)
+
+        # Draw high/low temperatures below the weather icon
+        hi_lo_text = f'H: {int(self.high_temp)}°C  L: {int(self.low_temp)}°C'
+        hi_lo_bbox = self.draw.textbbox((0, 0), hi_lo_text, font=self.hi_lo_font)
+        self.draw.text((icon_x, icon_y + 90), hi_lo_text, font=self.hi_lo_font, fill=0)
 
         # Draw the conditions
         cond_text = f'{titlecase(self.conditions_text)}'

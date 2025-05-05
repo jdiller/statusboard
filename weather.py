@@ -28,6 +28,20 @@ class Weather:
             return 0
         return weather['main']['temp']
 
+    async def get_high_temperature(self):
+        """Asynchronously get high temperature."""
+        weather = await self.get_weather()
+        if "error" in weather:
+            return 0
+        return weather['main']['temp_max']
+
+    async def get_low_temperature(self):
+        """Asynchronously get low temperature."""
+        weather = await self.get_weather()
+        if "error" in weather:
+            return 0
+        return weather['main']['temp_min']
+
     async def get_humidity(self):
         """Asynchronously get humidity."""
         weather = await self.get_weather()

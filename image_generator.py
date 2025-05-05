@@ -152,11 +152,13 @@ async def get_weather_image() -> Image.Image:
     logger.info('Fetching weather data for image')
     weather = Weather(config)
     # Fetch all weather data in parallel
-    temperature, humidity, conditions, wind_speed = await asyncio.gather(
+    temperature, humidity, conditions, wind_speed, high_temp, low_temp = await asyncio.gather(
         weather.get_temperature(),
         weather.get_humidity(),
         weather.get_conditions(),
-        weather.get_wind_speed()
+        weather.get_wind_speed(),
+        weather.get_high_temperature(),
+        weather.get_low_temperature()
     )
     conditions_id, conditions_text = conditions
 
@@ -165,6 +167,8 @@ async def get_weather_image() -> Image.Image:
         panel = WeatherPanel()
         panel.temperature = temperature
         panel.humidity = humidity
+        panel.high_temp = high_temp
+        panel.low_temp = low_temp
         panel.conditions_id = conditions_id
         panel.conditions_text = conditions_text
         panel.wind_speed = wind_speed
