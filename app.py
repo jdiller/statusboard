@@ -1,8 +1,9 @@
 import drawing_utils
 import asyncio
 import image_generator
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, Security, status
 from fastapi.responses import StreamingResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from localconfig import get_config
 from logconfig import configure_logging
 from io import BytesIO
@@ -16,6 +17,21 @@ config = get_config()
 logger = configure_logging(config)
 
 app = FastAPI()
+security = HTTPBearer()
+
+# Get auth token from config or use a default (you should set this in your config file)
+AUTH_TOKEN = config.get("security", "auth_token", fallback="your-secret-token")
+
+def verify_token(credentials: HTTPAuthorizationCredentials = Security(security)):
+    """Verify that the provided token matches the expected token."""
+    if credentials.credentials != AUTH_TOKEN:
+        logger.warning(f"Invalid authentication attempt with token: {credentials.credentials[:10]}...")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return credentials.credentials
 
 repo = Repository(config)
 
@@ -24,7 +40,7 @@ async def index():
     logger.info('Health check endpoint accessed')
     return {"status": "healthy"}
 
-@app.post("/reminders")
+@app.post("/reminders", dependencies=[Depends(verify_token)])
 async def create_reminder(reminder_data: Dict[str, Any]):
     logger.info('Creating a new reminder')
     required = ['id', 'message', 'time', 'list', 'location', 'completed']
@@ -45,7 +61,7 @@ async def create_reminder(reminder_data: Dict[str, Any]):
     logger.info('Reminder created successfully')
     return {"message": "Reminder created successfully"}
 
-@app.get("/reminders/{reminder_id}")
+@app.get("/reminders/{reminder_id}", dependencies=[Depends(verify_token)])
 async def get_reminder(reminder_id: str):
     logger.info(f'Fetching reminder with ID: {reminder_id}')
     reminder = repo.get_reminder(reminder_id)
@@ -55,7 +71,7 @@ async def get_reminder(reminder_id: str):
 
     return asdict(reminder)
 
-@app.get("/reminders")
+@app.get("/reminders", dependencies=[Depends(verify_token)])
 async def get_all_reminders():
     logger.info('Fetching all reminders')
     reminders = repo.get_all_reminders()
@@ -65,7 +81,7 @@ async def get_all_reminders():
     ]
     return reminders_list
 
-@app.get("/statusboard")
+@app.get("/statusboard", dependencies=[Depends(verify_token)])
 async def statusboard():
     logger.info('Generating statusboard image')
 
@@ -79,7 +95,7 @@ async def statusboard():
     # Return image as response
     return StreamingResponse(img_io, media_type="image/bmp")
 
-@app.get("/statusboard_bytes")
+@app.get("/statusboard_bytes", dependencies=[Depends(verify_token)])
 async def statusboard_bytes():
     logger.info('Generating statusboard image bytes')
 
@@ -93,7 +109,7 @@ async def statusboard_bytes():
     headers = {"Content-Disposition": "attachment; filename=statusboard.bin"}
     return StreamingResponse(byte_io, media_type="application/octet-stream", headers=headers)
 
-@app.get('/test_image')
+@app.get('/test_image', dependencies=[Depends(verify_token)])
 async def test_image_route():
     logger.info('Generating test image with all icons and battery gauges')
 

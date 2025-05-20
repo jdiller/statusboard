@@ -6,3 +6,4 @@ uvicorn
 redis
 aiohttp
 tzlocal
+python-multipart
