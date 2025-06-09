@@ -1,9 +1,10 @@
 import drawing_utils
 import asyncio
 import image_generator
-from fastapi import FastAPI, HTTPException, Depends, Security, status
+from fastapi import FastAPI, HTTPException, Depends, Security, status, Request
 from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from starlette.middleware.base import BaseHTTPMiddleware
 from localconfig import get_config
 from logconfig import configure_logging
 from io import BytesIO
@@ -11,21 +12,44 @@ from repository import Repository
 from reminder import Reminder
 from dataclasses import asdict
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 config = get_config()
 logger = configure_logging(config)
 
 app = FastAPI()
-security = HTTPBearer()
+
+# Add logging middleware
+class LoggingMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        logger.info(f"Incoming request: {request.method} {request.url}")
+        logger.info(f"Headers: {dict(request.headers)}")
+        response = await call_next(request)
+        logger.info(f"Response status: {response.status_code}")
+        return response
+
+app.add_middleware(LoggingMiddleware)
+
+# Make HTTPBearer optional for debugging
+security = HTTPBearer(auto_error=False)
 
 # Get auth token from config or use a default (you should set this in your config file)
 AUTH_TOKEN = config.get("security", "auth_token", fallback="your-secret-token")
 
-def verify_token(credentials: HTTPAuthorizationCredentials = Security(security)):
+def verify_token(request: Request, credentials: Optional[HTTPAuthorizationCredentials] = Security(security)):
+    logger.info(f"Headers: {dict(request.headers)}")
+    logger.info(f"Auth credentials: {credentials}")
 
-    print(f"Verifying token: {credentials.credentials}")
-    print(f"Expected token: {AUTH_TOKEN}")
+    if credentials is None:
+        logger.warning("No authorization credentials provided")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="No authorization credentials provided",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    logger.info(f"Verifying token: {credentials.credentials}")
+    logger.info(f"Expected token: {AUTH_TOKEN}")
     """Verify that the provided token matches the expected token."""
     if credentials.credentials != AUTH_TOKEN:
         logger.warning(f"Invalid authentication attempt with token: {credentials.credentials[:10]}...")
