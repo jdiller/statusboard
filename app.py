@@ -23,8 +23,9 @@ security = HTTPBearer()
 AUTH_TOKEN = config.get("security", "auth_token", fallback="your-secret-token")
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Security(security)):
-    logger.info(f"Verifying token: {credentials.credentials}")
-    logger.info(f"Expected token: {AUTH_TOKEN}")
+
+    print(f"Verifying token: {credentials.credentials}")
+    print(f"Expected token: {AUTH_TOKEN}")
     """Verify that the provided token matches the expected token."""
     if credentials.credentials != AUTH_TOKEN:
         logger.warning(f"Invalid authentication attempt with token: {credentials.credentials[:10]}...")

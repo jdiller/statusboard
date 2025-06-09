@@ -3,7 +3,7 @@ import sys
 
 def configure_logging(config):
     root = logging.getLogger()
-
+    print("Configuring logging")
     # Get log level with proper ConfigParser syntax and fallback
     try:
         log_level = config.get("logging", "log_level", fallback="INFO")
