@@ -106,7 +106,7 @@ async def get_all_reminders():
     ]
     return reminders_list
 
-@app.get("/statusboard", dependencies=[Depends(verify_token)])
+@app.get("/statusboard")
 async def statusboard():
     logger.info('Generating statusboard image')
 
