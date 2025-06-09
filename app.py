@@ -21,9 +21,12 @@ app = FastAPI()
 
 # Add logging middleware
 class LoggingMiddleware(BaseHTTPMiddleware):
+    def redact(self, headers: dict) -> dict:
+        return {k: v for k, v in headers.items() if k != "Authorization"}
+
     async def dispatch(self, request: Request, call_next):
         logger.info(f"Incoming request: {request.method} {request.url}")
-        logger.info(f"Headers: {dict(request.headers)}")
+        logger.info(f"Headers: {self.redact(dict(request.headers))}")
         response = await call_next(request)
         logger.info(f"Response status: {response.status_code}")
         return response
@@ -37,8 +40,6 @@ security = HTTPBearer(auto_error=False)
 AUTH_TOKEN = config.get("security", "auth_token", fallback="your-secret-token")
 
 def verify_token(request: Request, credentials: Optional[HTTPAuthorizationCredentials] = Security(security)):
-    logger.info(f"Headers: {dict(request.headers)}")
-    logger.info(f"Auth credentials: {credentials}")
 
     if credentials is None:
         logger.warning("No authorization credentials provided")
@@ -48,11 +49,8 @@ def verify_token(request: Request, credentials: Optional[HTTPAuthorizationCreden
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    logger.info(f"Verifying token: {credentials.credentials}")
-    logger.info(f"Expected token: {AUTH_TOKEN}")
     """Verify that the provided token matches the expected token."""
     if credentials.credentials != AUTH_TOKEN:
-        logger.warning(f"Invalid authentication attempt with token: {credentials.credentials[:10]}...")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication token",
