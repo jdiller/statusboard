@@ -61,14 +61,40 @@ def draw_diagonal_pattern(draw: ImageDraw, pattern_left: int, pattern_right: int
         if len(line_points) >= 2:
             draw.line([line_points[0], line_points[-1]], fill=fill, width=width)
 
-def image_to_packed_bytes(image: Image.Image) -> bytearray:
+def image_to_packed_bytes(image: Image.Image, reverse_bits: bool = False, pad_rows: bool = False) -> bytearray:
+    """
+    Convert PIL Image to packed byte array for e-ink display.
+
+    Args:
+        image: PIL Image in mode '1' (1-bit black and white)
+        reverse_bits: If True, reverse bit order within each byte (LSB first instead of MSB first)
+        pad_rows: If True, pad each row to next byte boundary
+
+    Returns:
+        bytearray of packed pixel data
+    """
     logging.info('Converting image to packed bytes')
+
     # Ensure the image is in '1' mode (1-bit pixels, black and white)
     if image.mode != '1':
         image = image.convert('1')
 
     # Get image dimensions
     width, height = image.size
+    logging.info(f'Image dimensions: {width}x{height}')
+
+    # Calculate expected byte count
+    bits_per_row = width
+    if pad_rows:
+        # Round up to next byte boundary
+        bytes_per_row = (bits_per_row + 7) // 8
+        bits_per_row = bytes_per_row * 8
+
+    expected_bytes = ((width * height) + 7) // 8
+    if pad_rows:
+        expected_bytes = ((bits_per_row * height) + 7) // 8
+
+    logging.info(f'Expected byte count: {expected_bytes}')
 
     # Prepare a byte array
     packed_bytes = bytearray()
@@ -77,21 +103,50 @@ def image_to_packed_bytes(image: Image.Image) -> bytearray:
     for y in range(height):
         byte = 0
         bit_count = 0
+
         for x in range(width):
             # Get the pixel value (0 or 255)
             pixel = image.getpixel((x, y))
-            # Set the bit if the pixel is white
-            if pixel == 255:
-                byte |= (1 << (7 - bit_count))
+
+            # Set the bit if the pixel is white (we flipped this earlier)
+            pixel_bit = 1 if pixel == 255 else 0
+
+            if reverse_bits:
+                # LSB first: bit 0, 1, 2, ..., 7
+                byte |= (pixel_bit << bit_count)
+            else:
+                # MSB first: bit 7, 6, 5, ..., 0 (original behavior)
+                byte |= (pixel_bit << (7 - bit_count))
+
             bit_count += 1
+
             # If we've filled a byte, append it to the array
             if bit_count == 8:
                 packed_bytes.append(byte)
                 byte = 0
                 bit_count = 0
-        # If there are remaining bits, append the last byte
+
+        # Handle end of row
         if bit_count > 0:
+            # We have partial bits in the current byte
             packed_bytes.append(byte)
+            bit_count = 0
+            byte = 0
+        elif pad_rows:
+            # Row ended exactly on byte boundary but we want padding
+            # Add any necessary padding bytes (none needed in this case)
+            pass
+
+    actual_bytes = len(packed_bytes)
+    logging.info(f'Generated {actual_bytes} bytes (expected {expected_bytes})')
+
+    if actual_bytes != expected_bytes:
+        logging.warning(f'Byte count mismatch! Expected {expected_bytes}, got {actual_bytes}')
+
+    # Log first few bytes for debugging
+    if len(packed_bytes) >= 8:
+        first_bytes = ' '.join(f'{b:02x}' for b in packed_bytes[:8])
+        logging.info(f'First 8 bytes: {first_bytes}')
 
     return packed_bytes
 
@@ -303,5 +358,39 @@ def create_test_image(width: int = 800, height: int = 480) -> Image.Image:
     text_bbox = draw.textbbox((0, 0), note_text, font=label_font)
     text_width = text_bbox[2] - text_bbox[0]
     draw.text((width - text_width - padding, height - 20), note_text, font=label_font, fill=0)
+
+    return image
+
+def create_debug_pattern_image(width: int = 800, height: int = 480) -> Image.Image:
+    """Create a simple debug pattern to test byte packing."""
+    logging.info(f"Creating debug pattern image {width}x{height}")
+
+    # Create a new image with white background
+    image = Image.new('1', (width, height), 1)
+    draw = ImageDraw.Draw(image)
+
+    # Draw vertical stripes every 8 pixels (byte boundaries)
+    for x in range(0, width, 16):  # Every 16 pixels (2 bytes)
+        draw.rectangle([(x, 0), (x + 8, height)], fill=0)  # 8-pixel black stripe
+
+    # Draw horizontal stripes every 16 pixels
+    for y in range(0, height, 32):  # Every 32 pixels
+        draw.rectangle([(0, y), (width, y + 16)], fill=0)  # 16-pixel black stripe
+
+    # Draw a small test pattern in top-left corner
+    # This creates a recognizable pattern: checkerboard
+    for y in range(0, min(64, height), 8):
+        for x in range(0, min(64, width), 8):
+            if (x // 8 + y // 8) % 2 == 0:
+                draw.rectangle([(x, y), (x + 8, y + 8)], fill=0)
+
+    # Add some text to identify orientation
+    try:
+        font = fonts.regular(24)
+        draw.text((width - 200, 10), "TOP RIGHT", font=font, fill=0)
+        draw.text((10, height - 40), "BOTTOM LEFT", font=font, fill=0)
+    except:
+        # Fallback if fonts aren't available
+        pass
 
     return image
