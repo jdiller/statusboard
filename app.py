@@ -149,53 +149,6 @@ async def test_image_route():
     # Return image as response
     return StreamingResponse(img_io, media_type="image/bmp")
 
-@app.get('/debug_pattern')
-async def debug_pattern_route():
-    logger.info('Generating debug pattern image')
-
-    # Generate the debug pattern
-    img = await asyncio.to_thread(drawing_utils.create_debug_pattern_image)
-
-    # Convert image to byte stream in a thread
-    img_io = BytesIO()
-    await asyncio.to_thread(lambda: img.save(img_io, 'BMP'))
-    img_io.seek(0)
-
-    # Return image as response
-    return StreamingResponse(img_io, media_type="image/bmp")
-
-@app.get('/debug_pattern_bytes')
-async def debug_pattern_bytes_route():
-    logger.info('Generating debug pattern bytes')
-
-    # Generate the debug pattern
-    img = await asyncio.to_thread(drawing_utils.create_debug_pattern_image)
-
-    # Try different bit packing options
-    logger.info('Generating with default bit order (MSB first)')
-    byte_array = await asyncio.to_thread(drawing_utils.image_to_packed_bytes, img)
-    byte_io = BytesIO(byte_array)
-
-    # Create a response with the byte array
-    headers = {"Content-Disposition": "attachment; filename=debug_pattern.bin"}
-    return StreamingResponse(byte_io, media_type="application/octet-stream", headers=headers)
-
-@app.get('/debug_pattern_bytes_reversed')
-async def debug_pattern_bytes_reversed_route():
-    logger.info('Generating debug pattern bytes with reversed bit order')
-
-    # Generate the debug pattern
-    img = await asyncio.to_thread(drawing_utils.create_debug_pattern_image)
-
-    # Try reversed bit order
-    logger.info('Generating with reversed bit order (LSB first)')
-    byte_array = await asyncio.to_thread(drawing_utils.image_to_packed_bytes, img, reverse_bits=True)
-    byte_io = BytesIO(byte_array)
-
-    # Create a response with the byte array
-    headers = {"Content-Disposition": "attachment; filename=debug_pattern_reversed.bin"}
-    return StreamingResponse(byte_io, media_type="application/octet-stream", headers=headers)
-
 if __name__ == '__main__':
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=5000)
