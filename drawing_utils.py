@@ -81,7 +81,7 @@ def image_to_packed_bytes(image: Image.Image) -> bytearray:
             # Get the pixel value (0 or 255)
             pixel = image.getpixel((x, y))
             # Set the bit if the pixel is black
-            if pixel == 0:
+            if pixel == 1:
                 byte |= (1 << (7 - bit_count))
             bit_count += 1
             # If we've filled a byte, append it to the array
