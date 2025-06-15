@@ -1,20 +1,20 @@
 from PIL import Image, ImageDraw, ImageFont
 import logging
 from typing import List
-from drawing import fonts
+from . import fonts
+from .base import Panel
 from datetime import time
 from flights import Flight
 
-class PlanesPanel:
+class PlanesPanel(Panel):
     """Class for creating and rendering a panel of overhead flights"""
 
     PADDING = 2
 
     def __init__(self, width: int = 400, height: int = 240):
-        # Image dimensions
-        self.width = width
-        self.height = height
-        self.image = Image.new('1', (width, height), 1)
+        super().__init__(width, height)
+        self.flights_service = None  # Flights instance
+        self.image = Image.new('1', (self.width, self.height), 1)
         self.draw = ImageDraw.Draw(self.image)
 
         # Font settings
@@ -35,6 +35,21 @@ class PlanesPanel:
         """Set the flights list"""
         self._flights = value
         return self
+
+    async def fetch_data(self):
+        """Fetch flight data from the Flights service"""
+        if not self.flights_service:
+            self.logger.warning("No Flights instance configured")
+            return
+
+        self.logger.info('Fetching flights data')
+
+        try:
+            self.flights = await self.flights_service.get_flights_as_objects()
+            self.logger.info(f'Found {len(self.flights)} flights')
+        except Exception as e:
+            self.logger.error(f"Error fetching flights: {e}")
+            raise
 
     def render(self) -> Image.Image:
         """Render the flights panel and return the image"""

@@ -1,16 +1,17 @@
 from PIL import Image, ImageDraw, ImageFont
 import logging
 from titlecase import titlecase
-from drawing import fonts
+from . import fonts
+from .base import Panel
+import asyncio
 
-class WeatherPanel:
+class WeatherPanel(Panel):
     """Class for creating and rendering a weather information panel"""
 
     def __init__(self, width: int = 400, height: int = 240):
-        # Image dimensions
-        self.width = width
-        self.height = height
-        self.image = Image.new('1', (width, height), 1)
+        super().__init__(width, height)
+        self.weather = None  # Weather instance
+        self.image = Image.new('1', (self.width, self.height), 1)
         self.draw = ImageDraw.Draw(self.image)
 
         # Font settings
@@ -109,6 +110,36 @@ class WeatherPanel:
         """Set the wind speed"""
         self._wind_speed = value
         return self
+
+    async def fetch_data(self):
+        """Fetch weather data from the Weather service"""
+        if not self.weather:
+            self.logger.warning("No Weather instance configured")
+            return
+
+        self.logger.info('Fetching weather data')
+
+        try:
+            # Fetch all weather data in parallel
+            temperature, humidity, conditions, wind_speed, high_temp, low_temp = await asyncio.gather(
+                self.weather.get_temperature(),
+                self.weather.get_humidity(),
+                self.weather.get_conditions(),
+                self.weather.get_wind_speed(),
+                self.weather.get_high_temperature(),
+                self.weather.get_low_temperature()
+            )
+
+            self.temperature = temperature
+            self.humidity = humidity
+            self.conditions_id, self.conditions_text = conditions
+            self.wind_speed = wind_speed
+            self.high_temp = high_temp
+            self.low_temp = low_temp
+
+        except Exception as e:
+            self.logger.error(f"Error fetching weather data: {e}")
+            raise
 
     def get_weather_icon(self) -> str:
         """Get an icon character based on the weather condition ID"""

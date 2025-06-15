@@ -1,244 +1,187 @@
-import drawing_utils
+from drawing import QuadrantDashboard, WeatherPanel, SensorsPanel, RemindersPanel, PlanesPanel
 from homeassistant import HomeAssistant
 from weather import Weather
 from localconfig import get_config
 from logconfig import configure_logging
 from repository import Repository
-from datetime import datetime
-from titlecase import titlecase
-import asyncio
-from PIL import Image
-from drawing import LabelValue, ChargingMeter, RemindersPanel, WeatherPanel, PlanesPanel
 from flights import Flights
+from PIL import Image
+import asyncio
 
 config = get_config()
 logger = configure_logging(config)
-repo = Repository(config)
-
-async def get_ups_meter_image() -> Image.Image:
-    logger.info('Fetching UPS status for meter image')
-    ha = HomeAssistant(config)
-    ups_status = await ha.get_value('sensor.cyberpower_battery_charge')
-    logger.info(f'UPS status: {ups_status}')
-    if 'error' in ups_status:
-        logger.error('Error fetching UPS status')
-        img = await asyncio.to_thread(drawing_utils.create_error_image, ups_status.get('error', 'Unknown error'))
-    else:
-        # Create ChargingMeter
-        def create_meter():
-            meter = ChargingMeter()
-            meter.current_percentage = int(ups_status['state'])
-            meter.target_percentage = 100
-            meter.charging = False
-            meter.plugged_in = True
-            meter.label_text = "UPS Battery: "
-            return meter.render()
-
-        img = await asyncio.to_thread(create_meter)
-    return img
-
-async def get_charging_meter_image() -> Image.Image:
-    logger.info('Fetching car status for charging meter image')
-    ha = HomeAssistant(config)
-    # Fetch all data in parallel
-    car_state_of_charge, car_charging_target, car_charging, car_plugged_in = await asyncio.gather(
-        ha.get_value('sensor.ix_xdrive50_remaining_battery_percent'),
-        ha.get_value('sensor.ix_xdrive50_charging_target'),
-        ha.get_value('binary_sensor.ix_xdrive50_charging_status_2'),
-        ha.get_value('binary_sensor.ix_xdrive50_connection_status')
-    )
-
-    logger.info(f'Car charging: {car_charging}')
-    logger.info(f'Car plugged in: {car_plugged_in}')
-
-    if 'error' in car_state_of_charge or 'error' in car_charging_target:
-        logger.error('Error fetching car status')
-        # Run image creation in a thread
-        img = await asyncio.to_thread(
-            drawing_utils.create_error_image,
-            car_state_of_charge.get('error', 'Unknown error')
-        )
-    else:
-        # Create ChargingMeter directly
-        def create_meter():
-            meter = ChargingMeter()
-            meter.current_percentage = int(car_state_of_charge['state'])
-            meter.target_percentage = int(car_charging_target['state'])
-            meter.charging = car_charging['state'] == 'on'
-            meter.plugged_in = car_plugged_in['state'] == 'on'
-            meter.label_text = "iX Battery: "
-            return meter.render()
-
-        img = await asyncio.to_thread(create_meter)
-    return img
-
-async def get_range_image() -> Image.Image:
-    logger.info('Fetching car status for range image')
-    ha = HomeAssistant(config)
-    car_range = await ha.get_value('sensor.ix_xdrive50_remaining_range_total')
-    logger.info(f'Car range: {car_range}')
-
-    # Create LabelValue directly
-    def create_label():
-        label_value = LabelValue()
-        label_value.label = 'Range'
-        label_value.value = f'{car_range["state"]} km'
-        return label_value.render()
-
-    img = await asyncio.to_thread(create_label)
-    return img
-
-async def get_indoor_cameras_armed_image() -> Image.Image:
-    logger.info('Fetching indoor cameras armed status for image')
-    ha = HomeAssistant(config)
-    indoor_cameras_armed = await ha.get_value('alarm_control_panel.blink_indoor')
-
-    # Create LabelValue directly
-    def create_label():
-        label_value = LabelValue()
-        label_value.label = 'Indoor'
-        label_value.value = titlecase(indoor_cameras_armed['state'].replace("_", " "))
-        return label_value.render()
-
-    img = await asyncio.to_thread(create_label)
-    return img
-
-async def get_outdoor_cameras_armed_image() -> Image.Image:
-    logger.info('Fetching outdoor cameras armed status for image')
-    ha = HomeAssistant(config)
-    outdoor_cameras_armed = await ha.get_value('alarm_control_panel.blink_outdoor')
-
-    # Create LabelValue directly
-    def create_label():
-        label_value = LabelValue()
-        label_value.label = 'Outdoor'
-        label_value.value = titlecase(outdoor_cameras_armed['state'].replace("_", " "))
-        return label_value.render()
-
-    img = await asyncio.to_thread(create_label)
-    return img
-
-async def get_main_thermostat_image() -> Image.Image:
-    logger.info('Fetching main thermostat status for image')
-    ha = HomeAssistant(config)
-    main_thermostat_temperature = await ha.get_value('sensor.picton_temperature')
-    main_thermostat_humidity = await ha.get_value('sensor.picton_humidity')
-    def create_label():
-        label_value = LabelValue()
-        label_value.label = 'Main Thermostat'
-        value = f'{main_thermostat_temperature["state"]}°C, {main_thermostat_humidity["state"]}%'
-        label_value.value = value
-        return label_value.render()
-
-    img = await asyncio.to_thread(create_label)
-    return img
-
-async def get_big_room_thermostat_image() -> Image.Image:
-    logger.info('Fetching main thermostat status for image')
-    ha = HomeAssistant(config)
-    thermostat_temperature = await ha.get_value('sensor.living_room_temperature')
-    thermostat_humidity = await ha.get_value('sensor.living_room_humidity')
-    def create_label():
-        label_value = LabelValue()
-        label_value.label = 'Learning Thermostat'
-        value = f'{thermostat_temperature["state"]}°C, {thermostat_humidity["state"]}%'
-        label_value.value = value
-        return label_value.render()
-
-    img = await asyncio.to_thread(create_label)
-    return img
-
-async def get_weather_image() -> Image.Image:
-    logger.info('Fetching weather data for image')
-    weather = Weather(config)
-    # Fetch all weather data in parallel
-    temperature, humidity, conditions, wind_speed, high_temp, low_temp = await asyncio.gather(
-        weather.get_temperature(),
-        weather.get_humidity(),
-        weather.get_conditions(),
-        weather.get_wind_speed(),
-        weather.get_high_temperature(),
-        weather.get_low_temperature()
-    )
-    conditions_id, conditions_text = conditions
-
-    # Create WeatherPanel
-    def create_weather_panel():
-        panel = WeatherPanel()
-        panel.temperature = temperature
-        panel.humidity = humidity
-        panel.high_temp = high_temp
-        panel.low_temp = low_temp
-        panel.conditions_id = conditions_id
-        panel.conditions_text = conditions_text
-        panel.wind_speed = wind_speed
-        return panel.render()
-
-    img = await asyncio.to_thread(create_weather_panel)
-    return img
-
-async def get_flights_image() -> Image.Image:
-    logger.info('Fetching flights for image')
-    flights = Flights(config)
-    flights_objects = await flights.get_flights_as_objects()
-
-    def create_planes_panel():
-        panel = PlanesPanel()
-        panel.flights = flights_objects
-        return panel.render()
-
-    flights_img = await asyncio.to_thread(create_planes_panel)
-    return flights_img
 
 async def get_statusboard_image() -> Image.Image:
-    # Get the individual images in parallel
-    weather_img, battery_img, range_img, indoor_cameras_armed_img, outdoor_cameras_armed_img, ups_img, main_thermostat_img, big_room_thermostat_img, flights_img = await asyncio.gather(
-        get_weather_image(),
-        get_charging_meter_image(),
-        get_range_image(),
-        get_indoor_cameras_armed_image(),
-        get_outdoor_cameras_armed_image(),
-        get_ups_meter_image(),
-        get_main_thermostat_image(),
-        get_big_room_thermostat_image(),
-        get_flights_image()
-    )
+    """Generate the complete statusboard image"""
+    logger.info('Generating statusboard image')
 
-    # Get reminders and create reminders image
-    reminders = repo.get_all_reminders()
-    undated_reminders = [reminder for reminder in reminders if reminder.time is None or not isinstance(reminder.time, datetime)]
-    logger.info(f'Undated reminders: {len(undated_reminders)}')
-    dated_reminders = [reminder for reminder in reminders if (reminder.time is not None and isinstance(reminder.time, datetime))]
-    logger.info(f'Dated reminders: {len(dated_reminders)}')
-    dated_reminders = sorted(dated_reminders, key=lambda x: x.time)
+    # Create dashboard
+    dashboard = QuadrantDashboard(800, 480)
 
-    display_reminders = undated_reminders + dated_reminders
+    # Create and configure panels
+    sensors_panel = SensorsPanel()
+    sensors_panel.ha = HomeAssistant(config)
 
-    # Create RemindersPanel directly
-    def create_reminders_panel():
-        panel = RemindersPanel()
-        panel.reminders = display_reminders
-        return panel.render()
+    weather_panel = WeatherPanel()
+    weather_panel.weather = Weather(config)
 
-    reminders_img = await asyncio.to_thread(create_reminders_panel)
+    reminders_panel = RemindersPanel()
+    reminders_panel.repository = Repository(config)
 
+    planes_panel = PlanesPanel()
+    planes_panel.flights_service = Flights(config)
 
-    # Run image combination in a thread
-    combined_img = await asyncio.to_thread(
-        drawing_utils.create_statusboard_image,
-        weather_img,
-        battery_img,
-        range_img,
-        indoor_cameras_armed_img,
-        outdoor_cameras_armed_img,
-        ups_img,
-        main_thermostat_img,
-        big_room_thermostat_img,
-        reminders_img,
-        flights_img
-    )
-    return combined_img
+    # Add panels to dashboard quadrants
+    dashboard.set_quadrant(sensors_panel, 'top-left')
+    dashboard.set_quadrant(weather_panel, 'top-right')
+    dashboard.set_quadrant(reminders_panel, 'bottom-left')
+    dashboard.set_quadrant(planes_panel, 'bottom-right')
+
+    # Render the dashboard
+    return await dashboard.render()
 
 async def get_test_image() -> Image.Image:
-    """Get a test image with all icons and battery gauge variants."""
-    return await asyncio.to_thread(drawing_utils.create_test_image)
+    """Generate a test image with all components and icons"""
+    logger.info("Creating test image with component examples")
+
+    # Create a custom test dashboard
+    from PIL import Image, ImageDraw
+    from drawing import fonts, LabelValue, ChargingMeter, RemindersPanel, WeatherPanel
+    from reminder import Reminder
+    from datetime import datetime
+
+    # Create base image
+    image = Image.new('1', (800, 480), 1)
+    draw = ImageDraw.Draw(image)
+
+    # Define overall padding
+    padding = 10
+    section_spacing = 15
+
+    # Load fonts
+    label_font = fonts.regular(12)
+    section_font = fonts.bold(14)
+
+    # SECTION 1: Component Examples
+    current_y = padding
+
+    draw.text((padding, current_y), "UI COMPONENT EXAMPLES", font=section_font, fill=0)
+    current_y += 20
+
+    # LabelValue demo
+    label_value = LabelValue(width=350, height=25)
+    label_value.label = "LabelValue Demo"
+    label_value.value = "Using Properties"
+    label_demo = label_value.render()
+
+    draw.text((padding, current_y), "LabelValue Class:", font=label_font, fill=0)
+    image.paste(label_demo, (padding, current_y + 15))
+    current_y += 45
+
+    # ChargingMeter demo
+    charging_meter = ChargingMeter(width=350, height=30)
+    charging_meter.current_percentage = 75
+    charging_meter.target_percentage = 90
+    charging_meter.charging = True
+    charging_meter.label_text = "ChargingMeter Demo:"
+    meter_demo = charging_meter.render()
+
+    draw.text((padding, current_y), "ChargingMeter Class:", font=label_font, fill=0)
+    image.paste(meter_demo, (padding, current_y + 15))
+    current_y += 50
+
+    # RemindersPanel demo
+    sample_reminders = [
+        Reminder(id="1", message="Test reminder", time=datetime.now(), list="default", location="", completed=False),
+        Reminder(id="2", message="Another test", time=None, list="default", location="Home", completed=False)
+    ]
+    reminders_panel = RemindersPanel(width=350, height=100)
+    reminders_panel.reminders = sample_reminders
+    reminders_demo = reminders_panel.render()
+
+    draw.text((padding, current_y), "RemindersPanel Class:", font=label_font, fill=0)
+    image.paste(reminders_demo, (padding, current_y + 15))
+    current_y += 120
+
+    # WeatherPanel demo
+    weather_panel = WeatherPanel(width=350, height=130)
+    weather_panel.temperature = 22.5
+    weather_panel.humidity = 45
+    weather_panel.conditions_id = 800  # Clear
+    weather_panel.conditions_text = "clear sky"
+    weather_panel.wind_speed = 3.5
+    weather_demo = weather_panel.render()
+
+    draw.text((padding, current_y), "WeatherPanel Class:", font=label_font, fill=0)
+    image.paste(weather_demo, (padding, current_y + 15))
+    current_y += 150
+
+    # SECTION 2: Weather Icons
+    icon_section_x = 800 // 2 + 20
+    icon_section_y = padding + 20
+
+    draw.text((icon_section_x, padding), "WEATHER ICON EXAMPLES", font=section_font, fill=0)
+
+    # Weather conditions to test
+    weather_conditions = [
+        (210, "Thunderstorm"),
+        (310, "Drizzle"),
+        (510, "Rain"),
+        (610, "Snow"),
+        (710, "Mist"),
+        (800, "Clear"),
+        (801, "Partly Cloudy"),
+        (803, "Cloudy")
+    ]
+
+    # Draw weather icons in a grid
+    icon_size = 55
+    icon_spacing = 20
+    icons_per_row = 4
+
+    try:
+        for i, (condition_id, label) in enumerate(weather_conditions):
+            # Calculate position
+            row = i // icons_per_row
+            col = i % icons_per_row
+
+            icon_x = icon_section_x + col * (icon_size + icon_spacing)
+            icon_y = icon_section_y + row * (icon_size + 25)
+
+            # Create a small weather panel for the icon
+            icon_panel = WeatherPanel(width=icon_size, height=icon_size)
+            icon_panel.conditions_id = condition_id
+
+            # Get the icon character
+            icon = icon_panel.get_weather_icon()
+
+            # Draw icon
+            icon_font = fonts.symbols(icon_size - 10)
+
+            # Create small image for icon
+            icon_img = Image.new('1', (icon_size, icon_size), 1)
+            icon_draw = ImageDraw.Draw(icon_img)
+
+            # Center the icon
+            icon_draw.text((icon_size//2-20, icon_size//2-25), icon, font=icon_font, fill=0)
+
+            # Paste to main image
+            image.paste(icon_img, (icon_x, icon_y))
+
+            # Draw label
+            text_bbox = draw.textbbox((0, 0), label, font=label_font)
+            text_width = text_bbox[2] - text_bbox[0]
+            text_x = icon_x + (icon_size // 2) - (text_width // 2)
+            draw.text((text_x, icon_y + icon_size + 2), label, font=label_font, fill=0)
+
+    except Exception as e:
+        logger.error(f"Error rendering weather icons: {e}")
+        draw.text((icon_section_x, icon_section_y), f"Error: {e}", font=label_font, fill=0)
+
+    # Add dimensions note
+    note_text = "Test Image (800x480 pixels)"
+    text_bbox = draw.textbbox((0, 0), note_text, font=label_font)
+    text_width = text_bbox[2] - text_bbox[0]
+    draw.text((800 - text_width - padding, 480 - 20), note_text, font=label_font, fill=0)
+
+    return image

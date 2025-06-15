@@ -1,7 +1,7 @@
-import drawing_utils
+from drawing import ImageEncoder
 import asyncio
 import image_generator
-from fastapi import FastAPI, HTTPException, Depends, Security, status, Request
+from fastapi import FastAPI, HTTPException, Depends, Security, status, Reques
 from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -127,7 +127,7 @@ async def statusboard_bytes():
     combined_img = await image_generator.get_statusboard_image()
 
     # Run byte packing in a thread
-    byte_array = await asyncio.to_thread(drawing_utils.image_to_packed_bytes, combined_img)
+    byte_array = await asyncio.to_thread(ImageEncoder.to_packed_bytes, combined_img)
     byte_io = BytesIO(byte_array)
 
     # Create a response with the byte array

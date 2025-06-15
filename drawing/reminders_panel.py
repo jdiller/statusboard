@@ -2,18 +2,19 @@ from PIL import Image, ImageDraw, ImageFont
 import logging
 from typing import List
 from reminder import Reminder
-from drawing import fonts
-from datetime import time
-class RemindersPanel:
+from . import fonts
+from .base import Panel
+from datetime import time, datetime
+
+class RemindersPanel(Panel):
     """Class for creating and rendering a panel of reminders"""
 
     PADDING = 2
 
     def __init__(self, width: int = 400, height: int = 240):
-        # Image dimensions
-        self.width = width
-        self.height = height
-        self.image = Image.new('1', (width, height), 1)
+        super().__init__(width, height)
+        self.repository = None  # Repository instance
+        self.image = Image.new('1', (self.width, self.height), 1)
         self.draw = ImageDraw.Draw(self.image)
 
         # Font settings
@@ -34,6 +35,31 @@ class RemindersPanel:
         """Set the reminders list"""
         self._reminders = value
         return self
+
+    async def fetch_data(self):
+        """Fetch reminders from the repository"""
+        if not self.repository:
+            self.logger.warning("No Repository instance configured")
+            return
+
+        self.logger.info('Fetching reminders')
+
+        try:
+            reminders = self.repository.get_all_reminders()
+
+            # Separate and sort reminders
+            undated_reminders = [r for r in reminders if r.time is None or not isinstance(r.time, datetime)]
+            dated_reminders = [r for r in reminders if r.time is not None and isinstance(r.time, datetime)]
+            dated_reminders = sorted(dated_reminders, key=lambda x: x.time)
+
+            # Combine with undated first
+            self.reminders = undated_reminders + dated_reminders
+
+            self.logger.info(f'Found {len(undated_reminders)} undated and {len(dated_reminders)} dated reminders')
+
+        except Exception as e:
+            self.logger.error(f"Error fetching reminders: {e}")
+            raise
 
     def render(self) -> Image.Image:
         """Render the reminders panel and return the image"""
